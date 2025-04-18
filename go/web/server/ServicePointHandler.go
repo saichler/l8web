@@ -27,6 +27,7 @@ func NewServicePointHandler(serviceName string, serviceArea uint16, vnic common.
 }
 
 func (this *ServicePointHandler) AddMethodType(method string, pb proto.Message) {
+	this.vnic.Resources().Registry().Register(pb)
 	this.methodToProto[method] = pb
 }
 
