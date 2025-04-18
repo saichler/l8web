@@ -85,6 +85,6 @@ func (this *RestServer) Err() error {
 	return nil
 }
 
-func (this *RestServer) Value(key any) interface{} {
+func (this *RestServer) Value(key interface{}) interface{} {
 	return nil
 }
