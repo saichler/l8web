@@ -5,6 +5,7 @@ import (
 	"github.com/saichler/l8test/go/infra/t_servicepoints"
 	"github.com/saichler/l8web/go/web/client"
 	"github.com/saichler/l8web/go/web/server"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/types/go/testtypes"
 	"net/http"
 	"testing"
@@ -19,10 +20,10 @@ func TestMain(m *testing.M) {
 
 func TestRestServer(t *testing.T) {
 	serverConfig := &server.RestServerConfig{
-		Host:           "127.0.0.1",
+		Host:           protocol.MachineIP,
 		Port:           8080,
 		Authentication: false,
-		CertName:       "",
+		CertName:       "test",
 		Prefix:         "/test/",
 	}
 	srv, err := server.NewRestServer(serverConfig)
@@ -44,10 +45,11 @@ func TestRestServer(t *testing.T) {
 	cnic := topo.VnicByVnetNum(1, 2)
 
 	clientConfig := &client.RestClientConfig{
-		Host:   "127.0.0.1",
-		Port:   8080,
-		Https:  false,
-		Prefix: "/test/",
+		Host:         protocol.MachineIP,
+		Port:         8080,
+		Https:        true,
+		CertFileName: "test.crt",
+		Prefix:       "/test/",
 	}
 	clt, err := client.NewRestClient(clientConfig, cnic.Resources())
 	if err != nil {

@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"github.com/saichler/layer8/go/overlay/protocol"
 	"github.com/saichler/shared/go/share/certs"
 	"net/http"
 	"os"
@@ -34,15 +35,7 @@ func NewRestServer(config *RestServerConfig) (*RestServer, error) {
 	if rs.CertName != "" {
 		_, err := os.Open(rs.CertName + ".crt")
 		if err != nil {
-			ca, caKey, err := certs.CreateCA(rs.CertName, "Saichler", "USA", "Santa Clara",
-				"San Jose", "1993 Curtner Ave", "95124", "saichler@gmail.com", 1)
-			if err != nil {
-				return rs, err
-			} else {
-				err = certs.CreateCrt(rs.CertName, "Saichler", "USA", "Santa Clara",
-					"San Jose", "1993 Curtner Ave", "95124", "saichler@gmail.com", "127.0.0.1", "MySecret", int64(rs.Port), 1, ca, caKey)
-				return rs, err
-			}
+			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
 		}
 	}
 	return rs, nil
