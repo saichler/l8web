@@ -2,11 +2,10 @@ package tests
 
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
-	. "github.com/saichler/l8test/go/infra/t_topology"
-	. "github.com/saichler/types/go/common"
+	. "github.com/saichler/l8types/go/ifs"
 )
 
-var topo *TestTopology
+//var topo *TestTopology
 
 func init() {
 	Log.SetLogLevel(Trace_Level)
@@ -22,13 +21,13 @@ func tear() {
 
 func reset(name string) {
 	Log.Info("*** ", name, " end ***")
-	topo.ResetHandlers()
+	//topo.ResetHandlers()
 }
 
 func setupTopology() {
-	topo = NewTestTopology(4, 20000, 30000, 40000)
+	//topo = NewTestTopology(4, []int{20000, 30000, 40000}, Trace_Level)
 }
 
 func shutdownTopology() {
-	topo.Shutdown()
+	//topo.Shutdown()
 }

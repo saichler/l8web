@@ -3,13 +3,18 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8utils/go/utils/certs"
+	"github.com/saichler/l8utils/go/utils/maps"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/shared/go/share/certs"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 )
+
+var endPoints = maps.NewSyncMap()
 
 type RestServer struct {
 	webServer *http.Server
@@ -24,7 +29,7 @@ type RestServerConfig struct {
 	Prefix         string
 }
 
-func NewRestServer(config *RestServerConfig) (*RestServer, error) {
+func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs := &RestServer{}
 	rs.Authentication = config.Authentication
 	rs.CertName = config.CertName
@@ -38,10 +43,11 @@ func NewRestServer(config *RestServerConfig) (*RestServer, error) {
 			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
 		}
 	}
+	http.DefaultServeMux = http.NewServeMux()
 	return rs, nil
 }
 
-func (this *RestServer) patternOf(handler *ServicePointHandler) string {
+func (this *RestServer) patternOf(handler *ServiceHandler) string {
 	buff := bytes.Buffer{}
 	buff.WriteString(this.Prefix)
 	buff.WriteString(strconv.Itoa(int(handler.serviceArea)))
@@ -51,8 +57,25 @@ func (this *RestServer) patternOf(handler *ServicePointHandler) string {
 	return buff.String()
 }
 
-func (this *RestServer) AddServicePointHandler(handler *ServicePointHandler) {
-	http.DefaultServeMux.HandleFunc(this.patternOf(handler), handler.serveHttp)
+func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
+	handler := &ServiceHandler{}
+	handler.serviceName = ws.ServiceName()
+	handler.serviceArea = ws.ServiceArea()
+	handler.vnic = vnic
+	handler.methodToProto = make(map[string]proto.Message)
+
+	handler.addEndPoint(http.MethodPost, ws.PostBody(), ws.PostResp())
+	handler.addEndPoint(http.MethodPut, ws.PutBody(), ws.PutResp())
+	handler.addEndPoint(http.MethodPatch, ws.PatchBody(), ws.PatchResp())
+	handler.addEndPoint(http.MethodDelete, ws.DeleteBody(), ws.DeleteResp())
+	handler.addEndPoint(http.MethodGet, ws.GetBody(), ws.GetResp())
+
+	path := this.patternOf(handler)
+	_, ok := endPoints.Get(path)
+	if !ok {
+		endPoints.Put(path, true)
+		http.DefaultServeMux.HandleFunc(this.patternOf(handler), handler.serveHttp)
+	}
 }
 
 func (this *RestServer) Start() error {
@@ -71,6 +94,8 @@ func (this *RestServer) Start() error {
 
 func (this *RestServer) Stop() {
 	this.webServer.Shutdown(this)
+	endPoints.Clean()
+	fmt.Println("Cleaned!")
 }
 
 func (this *RestServer) Deadline() (deadline time.Time, ok bool) {

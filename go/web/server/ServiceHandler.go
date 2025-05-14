@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"io"
@@ -10,28 +10,52 @@ import (
 	"reflect"
 )
 
-type ServicePointHandler struct {
+type ServiceHandler struct {
 	serviceName   string
 	serviceArea   uint16
+	vnic          ifs.IVNic
 	methodToProto map[string]proto.Message
-	vnic          common.IVirtualNetworkInterface
 }
 
-func NewServicePointHandler(serviceName string, serviceArea uint16, vnic common.IVirtualNetworkInterface) *ServicePointHandler {
-	sph := &ServicePointHandler{}
-	sph.serviceName = serviceName
-	sph.serviceArea = serviceArea
-	sph.vnic = vnic
-	sph.methodToProto = make(map[string]proto.Message)
-	return sph
+func (this *ServiceHandler) addEndPoint(method, body, resp string) {
+	if body != "" {
+		info, err := this.vnic.Resources().Registry().Info(body)
+		if err != nil {
+			this.vnic.Resources().Logger().Error(err)
+			return
+		}
+		ins, err := info.NewInstance()
+		if err != nil {
+			this.vnic.Resources().Logger().Error(err)
+			return
+		}
+		this.vnic.Resources().Registry().Register(ins)
+	}
+	if resp != "" {
+		info, err := this.vnic.Resources().Registry().Info(resp)
+		if err != nil {
+			this.vnic.Resources().Logger().Error(err)
+			return
+		}
+		ins, err := info.NewInstance()
+		if err != nil {
+			this.vnic.Resources().Logger().Error(err)
+			return
+		}
+		this.vnic.Resources().Registry().Register(ins)
+		this.methodToProto[method] = ins.(proto.Message)
+	}
 }
 
-func (this *ServicePointHandler) AddMethodType(method string, pb proto.Message) {
-	this.vnic.Resources().Registry().Register(pb)
-	this.methodToProto[method] = pb
+func (this *ServiceHandler) ServiceName() string {
+	return this.serviceName
 }
 
-func (this *ServicePointHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
+func (this *ServiceHandler) ServiceArea() uint16 {
+	return this.serviceArea
+}
+
+func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 	pb, err := this.newPb(method)
 	if err != nil {
@@ -69,7 +93,7 @@ func (this *ServicePointHandler) serveHttp(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (this *ServicePointHandler) newPb(method string) (proto.Message, error) {
+func (this *ServiceHandler) newPb(method string) (proto.Message, error) {
 	pb, ok := this.methodToProto[method]
 	if !ok {
 		return nil, errors.New("Method does not have any protobuf registered")
@@ -77,18 +101,18 @@ func (this *ServicePointHandler) newPb(method string) (proto.Message, error) {
 	return reflect.New(reflect.ValueOf(pb).Elem().Type()).Interface().(proto.Message), nil
 }
 
-func methodToAction(method string) common.Action {
+func methodToAction(method string) ifs.Action {
 	switch method {
 	case http.MethodPost:
-		return common.POST
+		return ifs.POST
 	case http.MethodGet:
-		return common.GET
+		return ifs.GET
 	case http.MethodDelete:
-		return common.DELETE
+		return ifs.DELETE
 	case http.MethodPut:
-		return common.PUT
+		return ifs.PUT
 	case http.MethodPatch:
-		return common.PATCH
+		return ifs.PATCH
 	}
-	return common.GET
+	return ifs.GET
 }

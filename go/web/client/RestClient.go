@@ -7,7 +7,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/saichler/types/go/common"
+	"github.com/saichler/l8types/go/ifs"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"io"
@@ -21,7 +21,7 @@ import (
 type RestClient struct {
 	RestClientConfig
 	httpClient *nethttp.Client
-	resources  common.IResources
+	resources  ifs.IResources
 }
 
 type RestClientConfig struct {
@@ -35,7 +35,7 @@ type RestClientConfig struct {
 	AuthPaths     []string
 }
 
-func NewRestClient(config *RestClientConfig, resources common.IResources) (*RestClient, error) {
+func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestClient, error) {
 	rc := &RestClient{}
 	rc.CertFileName = config.CertFileName
 	rc.Host = config.Host
@@ -83,7 +83,7 @@ func NewRestClient(config *RestClientConfig, resources common.IResources) (*Rest
 	return rc, nil
 }
 
-func (rc *RestClient) buildURL(endPoint, vars string) string {
+func (rc *RestClient) buildURL(end, vars string) string {
 	url := bytes.Buffer{}
 	url.WriteString("http")
 	if rc.Https {
@@ -96,13 +96,13 @@ func (rc *RestClient) buildURL(endPoint, vars string) string {
 	if rc.Prefix != "" {
 		url.WriteString(rc.Prefix)
 	}
-	url.WriteString(endPoint)
+	url.WriteString(end)
 	url.WriteString(vars)
 	fmt.Println("Client URL:", url.String())
 	return url.String()
 }
 
-func (rc *RestClient) request(method, endPoint, vars string, pbBody proto.Message) (*nethttp.Request, error) {
+func (rc *RestClient) request(method, end, vars string, pbBody proto.Message) (*nethttp.Request, error) {
 	var body []byte
 	var err error
 	if pbBody != nil && vars == "" {
@@ -111,13 +111,13 @@ func (rc *RestClient) request(method, endPoint, vars string, pbBody proto.Messag
 			return nil, err
 		}
 	}
-	url := rc.buildURL(endPoint, vars)
+	url := rc.buildURL(end, vars)
 	request, err := nethttp.NewRequest(method, url, bytes.NewReader([]byte(body)))
 	if err != nil {
 		return nil, err
 	}
 
-	if rc.TokenRequired && rc.Token == "" && rc.Https && !rc.isAuthPath(endPoint) {
+	if rc.TokenRequired && rc.Token == "" && rc.Https && !rc.isAuthPath(end) {
 		panic("No token with secure connection!")
 	}
 
@@ -130,12 +130,12 @@ func (rc *RestClient) request(method, endPoint, vars string, pbBody proto.Messag
 	return request, nil
 }
 
-func (rc *RestClient) isAuthPath(endPoint string) bool {
+func (rc *RestClient) isAuthPath(end string) bool {
 	if rc.AuthPaths == nil {
 		return false
 	}
 	for _, ap := range rc.AuthPaths {
-		if strings.Contains(endPoint, ap) {
+		if strings.Contains(end, ap) {
 			return true
 		}
 	}
@@ -164,9 +164,9 @@ func isTimeout(err error) bool {
 	return false
 }
 
-func (rc *RestClient) Do(method, endPoint, responseType, responseAttribute, vars string, pbBody proto.Message, tryCount int) (proto.Message, error) {
+func (rc *RestClient) Do(method, end, responseType, responseAttribute, vars string, pbBody proto.Message, tryCount int) (proto.Message, error) {
 
-	request, err := rc.request(method, endPoint, vars, pbBody)
+	request, err := rc.request(method, end, vars, pbBody)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (rc *RestClient) Do(method, endPoint, responseType, responseAttribute, vars
 	if err != nil {
 		if isTimeout(err) {
 			if tryCount <= 5 {
-				return rc.Do(method, endPoint, responseType, responseAttribute, vars, pbBody, tryCount+1)
+				return rc.Do(method, end, responseType, responseAttribute, vars, pbBody, tryCount+1)
 			}
 		}
 		return nil, err
@@ -230,22 +230,22 @@ func (rc *RestClient) Do(method, endPoint, responseType, responseAttribute, vars
 	return responsePb, err
 }
 
-func (rc *RestClient) GET(endPoint, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
-	return rc.Do("GET", endPoint, responseType, responseAttribute, vars, pbBody, 1)
+func (rc *RestClient) GET(end, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
+	return rc.Do("GET", end, responseType, responseAttribute, vars, pbBody, 1)
 }
 
-func (rc *RestClient) POST(endPoint, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
-	return rc.Do("POST", endPoint, responseType, responseAttribute, vars, pbBody, 1)
+func (rc *RestClient) POST(end, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
+	return rc.Do("POST", end, responseType, responseAttribute, vars, pbBody, 1)
 }
 
-func (rc *RestClient) PUT(endPoint, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
-	return rc.Do("PUT", endPoint, responseType, responseAttribute, vars, pbBody, 1)
+func (rc *RestClient) PUT(end, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
+	return rc.Do("PUT", end, responseType, responseAttribute, vars, pbBody, 1)
 }
 
-func (rc *RestClient) PATCH(endPoint, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
-	return rc.Do("PATCH", endPoint, responseType, responseAttribute, vars, pbBody, 1)
+func (rc *RestClient) PATCH(end, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
+	return rc.Do("PATCH", end, responseType, responseAttribute, vars, pbBody, 1)
 }
 
-func (rc *RestClient) DELETE(endPoint, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
-	return rc.Do("DELETE", endPoint, responseType, responseAttribute, vars, pbBody, 1)
+func (rc *RestClient) DELETE(end, responseType, responseAttribute, vars string, pbBody proto.Message) (proto.Message, error) {
+	return rc.Do("DELETE", end, responseType, responseAttribute, vars, pbBody, 1)
 }

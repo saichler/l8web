@@ -1,15 +1,25 @@
 package tests
 
 import (
+	"encoding/base64"
 	. "github.com/saichler/l8test/go/infra/t_resources"
-	"github.com/saichler/l8test/go/infra/t_servicepoints"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8web/go/web/client"
 	"github.com/saichler/l8web/go/web/server"
+	"github.com/saichler/layer8/go/overlay/plugins"
 	"github.com/saichler/layer8/go/overlay/protocol"
-	"github.com/saichler/types/go/testtypes"
-	"net/http"
+	vnet2 "github.com/saichler/layer8/go/overlay/vnet"
+	"github.com/saichler/layer8/go/overlay/vnic"
+	"google.golang.org/protobuf/proto"
+	"os"
+	"reflect"
 	"testing"
 	"time"
+)
+
+const (
+	VNET_PORT = 28000
 )
 
 func TestMain(m *testing.M) {
@@ -19,6 +29,111 @@ func TestMain(m *testing.M) {
 }
 
 func TestRestServer(t *testing.T) {
+	resources, _ := CreateResources(28000, 0, ifs.Info_Level)
+	vnet := vnet2.NewVNet(resources)
+	vnet.Start()
+	time.Sleep(time.Second)
+
+	webNic, svr, ok := createWebServer(t)
+	if !ok {
+		return
+	}
+
+	serviceNic, ok := createServiceNic(t)
+	if !ok {
+		return
+	}
+
+	defer func() {
+		webNic.Shutdown()
+		serviceNic.Shutdown()
+		vnet.Shutdown()
+		svr.Stop()
+	}()
+
+	info, _ := serviceNic.Resources().Registry().Info("TestProto")
+	pb, _ := info.NewInstance()
+
+	restClient, ok := createRestClient(t, pb)
+	if !ok {
+		return
+	}
+
+	v := reflect.ValueOf(pb)
+	field := v.Elem().FieldByName("MyString")
+	field.Set(reflect.ValueOf("Hello"))
+
+	resp, err := restClient.POST("0/Tests", "TestProto", "", "", pb.(proto.Message))
+	if err != nil {
+		Log.Fail(t, err)
+		return
+	}
+
+	v = reflect.ValueOf(resp)
+	field = v.Elem().FieldByName("MyString")
+	if field.String() != "Hello" {
+		Log.Fail(t, "Expected the same object")
+		return
+	}
+}
+
+func TestRestServer2(t *testing.T) {
+	resources, _ := CreateResources(28000, 0, ifs.Info_Level)
+	vnet := vnet2.NewVNet(resources)
+	vnet.Start()
+	time.Sleep(time.Second)
+
+	serviceNic, ok := createServiceNic(t)
+	if !ok {
+		return
+	}
+
+	info, _ := serviceNic.Resources().Registry().Info("TestProto")
+	pb, _ := info.NewInstance()
+
+	webNic, svr, ok := createWebServer(t)
+	if !ok {
+		return
+	}
+
+	defer func() {
+		webNic.Shutdown()
+		serviceNic.Shutdown()
+		vnet.Shutdown()
+		svr.Stop()
+	}()
+
+	time.Sleep(time.Second)
+
+	restClient, ok := createRestClient(t, pb)
+	if !ok {
+		return
+	}
+
+	v := reflect.ValueOf(pb)
+	field := v.Elem().FieldByName("MyString")
+	field.Set(reflect.ValueOf("Hello"))
+
+	resp, err := restClient.POST("0/Tests", "TestProto", "", "", pb.(proto.Message))
+	if err != nil {
+		Log.Fail(t, err)
+		return
+	}
+
+	v = reflect.ValueOf(resp)
+	field = v.Elem().FieldByName("MyString")
+	if field.String() != "Hello" {
+		Log.Fail(t, "Expected the same object")
+		return
+	}
+}
+
+func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
+	resources, _ := CreateResources(VNET_PORT, 1, ifs.Info_Level)
+	webNic := vnic.NewVirtualNetworkInterface(resources, nil)
+	webNic.Start()
+	webNic.WaitForConnection()
+
 	serverConfig := &server.RestServerConfig{
 		Host:           protocol.MachineIP,
 		Port:           8080,
@@ -29,21 +144,37 @@ func TestRestServer(t *testing.T) {
 	srv, err := server.NewRestServer(serverConfig)
 	if err != nil {
 		Log.Fail(t, err)
-		return
+		return nil, srv, false
 	}
-
-	snic := topo.VnicByVnetNum(3, 1)
-	h := server.NewServicePointHandler(t_servicepoints.ServiceName, 0, snic)
-	pb := &testtypes.TestProto{}
-	h.AddMethodType(http.MethodPost, pb)
-
-	srv.AddServicePointHandler(h)
-
+	webNic.Resources().Services().RegisterServiceHandlerType(&server.WebEndPointsService{})
+	_, err = webNic.Resources().Services().Activate(server.ServiceTypeName, server.ServiceName,
+		0, webNic.Resources(), webNic, srv)
+	if err != nil {
+		Log.Fail(t, err.Error())
+		return nil, srv, false
+	}
 	go srv.Start()
 	time.Sleep(time.Second)
+	return webNic, srv, true
+}
 
-	cnic := topo.VnicByVnetNum(1, 2)
+func createServiceNic(t *testing.T) (ifs.IVNic, bool) {
+	resources, _ := CreateResources(VNET_PORT, 2, ifs.Info_Level)
+	serviceNic := vnic.NewVirtualNetworkInterface(resources, nil)
+	serviceNic.Start()
+	serviceNic.WaitForConnection()
 
+	err := PushPlugin(serviceNic, "service.so")
+	if err != nil {
+		Log.Fail(t, err.Error())
+		return nil, false
+	}
+	time.Sleep(time.Second * 2)
+	return serviceNic, true
+}
+
+func createRestClient(t *testing.T, pb interface{}) (*client.RestClient, bool) {
+	resources, _ := CreateResources(VNET_PORT, 3, ifs.Info_Level)
 	clientConfig := &client.RestClientConfig{
 		Host:         protocol.MachineIP,
 		Port:         8080,
@@ -51,20 +182,22 @@ func TestRestServer(t *testing.T) {
 		CertFileName: "test.crt",
 		Prefix:       "/test/",
 	}
-	clt, err := client.NewRestClient(clientConfig, cnic.Resources())
+	restClient, err := client.NewRestClient(clientConfig, resources)
 	if err != nil {
 		Log.Fail(t, err)
-		return
+		return nil, false
 	}
+	resources.Registry().Register(pb)
+	return restClient, true
+}
 
-	pb = &testtypes.TestProto{MyString: "Hello"}
-	resp, err := clt.POST("0/"+t_servicepoints.ServiceName, "TestProto", "", "", pb)
+func PushPlugin(nic ifs.IVNic, name string) error {
+	data, err := os.ReadFile(name)
 	if err != nil {
-		Log.Fail(t, err)
-		return
+		return err
 	}
-	if pb.MyString != resp.(*testtypes.TestProto).MyString {
-		Log.Fail(t, "Expected the same object")
-		return
+	pb := &types.Plugin{
+		Data: base64.StdEncoding.EncodeToString(data),
 	}
+	return plugins.LoadPlugin(pb, nic)
 }
