@@ -60,24 +60,29 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	pb, err := this.newPb(method)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Cannot find pb for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
 		return
 	}
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to read body for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
 		return
 	}
 	err = protojson.Unmarshal(data, pb)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(pb).Elem().Type().Name() + "\n"))
+		w.Write([]byte("body for method " + method + string(data) + "\n"))
 		w.Write([]byte(err.Error()))
 		return
 	}
 	resp := this.vnic.SingleRequest(this.serviceName, this.serviceArea, methodToAction(method), pb)
 	if resp.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Error from single request:\n"))
 		w.Write([]byte(resp.Error().Error()))
 		return
 	}
@@ -86,6 +91,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		j, e := protojson.Marshal(elem)
 		if e != nil {
+			w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(elem).Elem().Type().Name()))
 			w.Write([]byte(e.Error()))
 		} else {
 			w.Write(j)
