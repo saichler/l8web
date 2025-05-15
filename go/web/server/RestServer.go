@@ -62,7 +62,8 @@ func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
 	handler.serviceName = ws.ServiceName()
 	handler.serviceArea = ws.ServiceArea()
 	handler.vnic = vnic
-	handler.methodToProto = make(map[string]proto.Message)
+	handler.method2Body = make(map[string]proto.Message)
+	handler.method2Resp = make(map[string]proto.Message)
 
 	handler.addEndPoint(http.MethodPost, ws.PostBody(), ws.PostResp())
 	handler.addEndPoint(http.MethodPut, ws.PutBody(), ws.PutResp())

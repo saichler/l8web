@@ -11,10 +11,11 @@ import (
 )
 
 type ServiceHandler struct {
-	serviceName   string
-	serviceArea   uint16
-	vnic          ifs.IVNic
-	methodToProto map[string]proto.Message
+	serviceName string
+	serviceArea uint16
+	vnic        ifs.IVNic
+	method2Body map[string]proto.Message
+	method2Resp map[string]proto.Message
 }
 
 func (this *ServiceHandler) addEndPoint(method, body, resp string) {
@@ -30,6 +31,7 @@ func (this *ServiceHandler) addEndPoint(method, body, resp string) {
 			return
 		}
 		this.vnic.Resources().Registry().Register(ins)
+		this.method2Body[method] = ins.(proto.Message)
 	}
 	if resp != "" {
 		info, err := this.vnic.Resources().Registry().Info(resp)
@@ -43,7 +45,7 @@ func (this *ServiceHandler) addEndPoint(method, body, resp string) {
 			return
 		}
 		this.vnic.Resources().Registry().Register(ins)
-		this.methodToProto[method] = ins.(proto.Message)
+		this.method2Resp[method] = ins.(proto.Message)
 	}
 }
 
@@ -57,7 +59,7 @@ func (this *ServiceHandler) ServiceArea() uint16 {
 
 func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
-	pb, err := this.newPb(method)
+	body, err := this.newBody(method)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Cannot find pb for method " + method + "\n"))
@@ -71,15 +73,15 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	err = protojson.Unmarshal(data, pb)
+	err = protojson.Unmarshal(data, body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(pb).Elem().Type().Name() + "\n"))
+		w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
 		w.Write([]byte("body for method " + method + string(data) + "\n"))
 		w.Write([]byte(err.Error()))
 		return
 	}
-	resp := this.vnic.SingleRequest(this.serviceName, this.serviceArea, methodToAction(method), pb)
+	resp := this.vnic.SingleRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
 	if resp.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error from single request:\n"))
@@ -99,8 +101,16 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (this *ServiceHandler) newPb(method string) (proto.Message, error) {
-	pb, ok := this.methodToProto[method]
+func (this *ServiceHandler) newBody(method string) (proto.Message, error) {
+	pb, ok := this.method2Body[method]
+	if !ok {
+		return nil, errors.New("Method does not have any protobuf registered")
+	}
+	return reflect.New(reflect.ValueOf(pb).Elem().Type()).Interface().(proto.Message), nil
+}
+
+func (this *ServiceHandler) newResp(method string) (proto.Message, error) {
+	pb, ok := this.method2Resp[method]
 	if !ok {
 		return nil, errors.New("Method does not have any protobuf registered")
 	}
