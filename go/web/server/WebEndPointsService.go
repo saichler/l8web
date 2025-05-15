@@ -7,6 +7,7 @@ import (
 	"github.com/saichler/l8utils/go/utils/web"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/plugins"
+	"time"
 )
 
 const (
@@ -24,7 +25,10 @@ func (this *WebEndPointsService) Activate(serviceName string, serviceArea uint16
 	this.server = args[0].(ifs.IWebServer)
 	vnic, ok := listener.(ifs.IVNic)
 	if ok {
-		vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
+		go func() {
+			time.Sleep(time.Second * 5)
+			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
+		}()
 	}
 	return nil
 }
