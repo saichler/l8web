@@ -26,7 +26,8 @@ func (this *WebEndPointsService) Activate(serviceName string, serviceArea uint16
 	vnic, ok := listener.(ifs.IVNic)
 	if ok {
 		go func() {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 10)
+			vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
 			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
 		}()
 	}
