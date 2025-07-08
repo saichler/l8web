@@ -12,7 +12,7 @@ import (
 
 type ServiceHandler struct {
 	serviceName string
-	serviceArea uint16
+	serviceArea byte
 	vnic        ifs.IVNic
 	method2Body map[string]proto.Message
 	method2Resp map[string]proto.Message
@@ -53,7 +53,7 @@ func (this *ServiceHandler) ServiceName() string {
 	return this.serviceName
 }
 
-func (this *ServiceHandler) ServiceArea() uint16 {
+func (this *ServiceHandler) ServiceArea() byte {
 	return this.serviceArea
 }
 

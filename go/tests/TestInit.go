@@ -3,6 +3,7 @@ package tests
 import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	. "github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/layer8/go/overlay/protocol"
 )
 
 //var topo *TestTopology
@@ -12,6 +13,7 @@ func init() {
 }
 
 func setup() {
+	protocol.Discovery_Enabled = false
 	setupTopology()
 }
 

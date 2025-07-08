@@ -75,6 +75,7 @@ func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
 	_, ok := endPoints.Get(path)
 	if !ok {
 		endPoints.Put(path, true)
+		fmt.Println("Registering path=", path)
 		http.DefaultServeMux.HandleFunc(this.patternOf(handler), handler.serveHttp)
 	}
 }

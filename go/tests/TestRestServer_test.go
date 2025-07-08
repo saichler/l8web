@@ -103,7 +103,7 @@ func TestRestServer2(t *testing.T) {
 		svr.Stop()
 	}()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 3)
 
 	restClient, ok := createRestClient(t, pb)
 	if !ok {
@@ -146,8 +146,8 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 		Log.Fail(t, err)
 		return nil, srv, false
 	}
-	webNic.Resources().Services().RegisterServiceHandlerType(&server.WebEndPointsService{})
-	_, err = webNic.Resources().Services().Activate(server.ServiceTypeName, server.ServiceName,
+	webNic.Resources().Services().RegisterServiceHandlerType(&server.WebService{})
+	_, err = webNic.Resources().Services().Activate(server.ServiceTypeName, ifs.WebService,
 		0, webNic.Resources(), webNic, srv)
 	if err != nil {
 		Log.Fail(t, err.Error())

@@ -11,22 +11,21 @@ import (
 )
 
 const (
-	ServiceName     = "WebEndPoints"
-	ServiceTypeName = "WebEndPointsService"
+	ServiceTypeName = "WebService"
 )
 
-type WebEndPointsService struct {
+type WebService struct {
 	server ifs.IWebServer
 }
 
-func (this *WebEndPointsService) Activate(serviceName string, serviceArea uint16,
+func (this *WebService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
 	resources.Registry().Register(&types.WebService{})
 	this.server = args[0].(ifs.IWebServer)
 	vnic, ok := listener.(ifs.IVNic)
 	if ok {
 		go func() {
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 2)
 			vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
 			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
 		}()
@@ -34,11 +33,11 @@ func (this *WebEndPointsService) Activate(serviceName string, serviceArea uint16
 	return nil
 }
 
-func (this *WebEndPointsService) DeActivate() error {
+func (this *WebService) DeActivate() error {
 	return nil
 }
 
-func (this *WebEndPointsService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	webService := pb.Element().(*types.WebService)
 	ws := &web.WebService{}
 	ws.DeSerialize(webService)
@@ -51,27 +50,27 @@ func (this *WebEndPointsService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IEle
 	return object.New(nil, nil)
 }
 
-func (this *WebEndPointsService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) Put(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *WebEndPointsService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) Patch(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *WebEndPointsService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) Delete(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *WebEndPointsService) GetCopy(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) GetCopy(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return nil
 }
-func (this *WebEndPointsService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
+func (this *WebService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	return object.New(nil, nil)
 }
-func (this *WebEndPointsService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg ifs.IMessage) ifs.IElements {
+func (this *WebService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	return nil
 }
-func (this *WebEndPointsService) TransactionMethod() ifs.ITransactionMethod {
+func (this *WebService) TransactionMethod() ifs.ITransactionMethod {
 	return nil
 }
-func (this *WebEndPointsService) WebService() ifs.IWebService {
+func (this *WebService) WebService() ifs.IWebService {
 	return nil
 }
