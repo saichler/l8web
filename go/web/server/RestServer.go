@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -44,6 +45,7 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 		}
 	}
 	http.DefaultServeMux = http.NewServeMux()
+	rs.loadWebUI()
 	return rs, nil
 }
 
@@ -88,6 +90,9 @@ func (this *RestServer) Start() error {
 	}
 	if this.CertName != "" {
 		err = this.webServer.ListenAndServeTLS(this.CertName+".crt", this.CertName+".crtKey")
+		if err != nil && !strings.Contains(err.Error(), "Server closed") {
+			panic(err)
+		}
 	} else {
 		err = this.webServer.ListenAndServe()
 	}

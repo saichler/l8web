@@ -75,6 +75,7 @@ func TestRestServer(t *testing.T) {
 		Log.Fail(t, "Expected the same object")
 		return
 	}
+	time.Sleep(time.Second * 60)
 }
 
 func TestRestServer2(t *testing.T) {
@@ -134,6 +135,9 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 	webNic.Start()
 	webNic.WaitForConnection()
 
+	webNic.Resources().Registry().Register(&types.Empty{})
+	webNic.Resources().Registry().Register(&types.Top{})
+
 	serverConfig := &server.RestServerConfig{
 		Host:           protocol.MachineIP,
 		Port:           8080,
@@ -154,7 +158,6 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 		return nil, srv, false
 	}
 	go srv.Start()
-	time.Sleep(time.Second)
 	return webNic, srv, true
 }
 
