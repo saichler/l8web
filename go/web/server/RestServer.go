@@ -38,14 +38,16 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs.Port = config.Port
 	rs.Prefix = config.Prefix
 
+	http.DefaultServeMux = http.NewServeMux()
+	rs.loadWebUI()
+
 	if rs.CertName != "" {
 		_, err := os.Open(rs.CertName + ".crt")
 		if err != nil {
 			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
 		}
 	}
-	http.DefaultServeMux = http.NewServeMux()
-	rs.loadWebUI()
+
 	return rs, nil
 }
 
