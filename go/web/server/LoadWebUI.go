@@ -9,6 +9,7 @@ import (
 )
 
 func (this *RestServer) loadWebUI() {
+	fmt.Println("Loading UI...")
 	fs := http.FileServer(http.Dir("web"))
 	this.loadWebDir("/", fs)
 }
@@ -27,10 +28,12 @@ func (this *RestServer) loadWebDir(path string, fs http.Handler) {
 			this.loadWebDir(concat(webPath, "/"), fs)
 		} else {
 			if file.Name() == "index.html" {
+				fmt.Println("Loaded index.html")
 				http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 					http.ServeFile(w, r, filepath.Join("web", "index.html"))
 				})
 			} else {
+				fmt.Println("Loaded file:", webPath)
 				http.DefaultServeMux.HandleFunc(webPath, fs.ServeHTTP)
 			}
 		}
