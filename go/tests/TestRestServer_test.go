@@ -75,7 +75,6 @@ func TestRestServer(t *testing.T) {
 		Log.Fail(t, "Expected the same object")
 		return
 	}
-	time.Sleep(time.Second * 60)
 }
 
 func TestRestServer2(t *testing.T) {

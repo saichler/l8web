@@ -81,7 +81,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	resp := this.vnic.SingleRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
+	resp := this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
 	if resp.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error from single request:\n"))
