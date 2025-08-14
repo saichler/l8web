@@ -89,14 +89,17 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	elem, ok := resp.Element().(proto.Message)
-	if ok {
-		j, e := protojson.Marshal(elem)
-		if e != nil {
-			w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(elem).Elem().Type().Name()))
-			w.Write([]byte(e.Error()))
-		} else {
-			w.Write(j)
+	for _, ei := range resp.Elements() {
+		elem, ok := ei.(proto.Message)
+		if ok {
+			j, e := protojson.Marshal(elem)
+			if e != nil {
+				w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(elem).Elem().Type().Name()))
+				w.Write([]byte(e.Error()))
+			} else {
+				w.Write(j)
+				w.Write([]byte("\n"))
+			}
 		}
 	}
 }
