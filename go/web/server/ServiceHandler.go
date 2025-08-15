@@ -89,19 +89,25 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{list: ["))
+	first := true
 	for _, ei := range resp.Elements() {
 		elem, ok := ei.(proto.Message)
 		if ok {
+			if !first {
+				w.Write([]byte(","))
+			}
+			first = false
 			j, e := protojson.Marshal(elem)
 			if e != nil {
 				w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(elem).Elem().Type().Name()))
 				w.Write([]byte(e.Error()))
 			} else {
 				w.Write(j)
-				w.Write([]byte("\n"))
 			}
 		}
 	}
+	w.Write([]byte("]}"))
 }
 
 func (this *ServiceHandler) newBody(method string) (proto.Message, error) {
