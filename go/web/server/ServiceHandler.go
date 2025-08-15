@@ -73,13 +73,15 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	err = protojson.Unmarshal(data, body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
-		w.Write([]byte("body for method " + method + string(data) + "\n"))
-		w.Write([]byte(err.Error()))
-		return
+	if data != nil && len(data) > 0 {
+		err = protojson.Unmarshal(data, body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
+			w.Write([]byte("body for method " + method + string(data) + "\n"))
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 	resp := this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
 	if resp.Error() != nil {
@@ -95,7 +97,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(e.Error()))
 		return
 	}
-	
+
 	j, e := protojson.Marshal(response.(proto.Message))
 	if e != nil {
 		w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(response).Elem().Type().Name()))
