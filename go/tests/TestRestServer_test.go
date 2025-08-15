@@ -51,10 +51,17 @@ func TestRestServer(t *testing.T) {
 		svr.Stop()
 	}()
 
-	info, _ := serviceNic.Resources().Registry().Info("TestProto")
+	info, err := serviceNic.Resources().Registry().Info("TestProtoList")
+	if err != nil {
+		Log.Fail(t, err)
+		return
+	}
+	pbList, _ := info.NewInstance()
+
+	info, _ = serviceNic.Resources().Registry().Info("TestProto")
 	pb, _ := info.NewInstance()
 
-	restClient, ok := createRestClient(t, pb)
+	restClient, ok := createRestClient(t, pbList)
 	if !ok {
 		return
 	}
@@ -63,14 +70,15 @@ func TestRestServer(t *testing.T) {
 	field := v.Elem().FieldByName("MyString")
 	field.Set(reflect.ValueOf("Hello"))
 
-	resp, err := restClient.POST("0/Tests", "TestProto", "", "", pb.(proto.Message))
+	resp, err := restClient.POST("0/Tests", "TestProtoList", "", "", pb.(proto.Message))
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
 
 	v = reflect.ValueOf(resp)
-	field = v.Elem().FieldByName("MyString")
+	field = v.Elem().FieldByName("List")
+	field = field.Index(0).Elem().FieldByName("MyString")
 	if field.String() != "Hello" {
 		Log.Fail(t, "Expected the same object")
 		return
@@ -88,7 +96,14 @@ func TestRestServer2(t *testing.T) {
 		return
 	}
 
-	info, _ := serviceNic.Resources().Registry().Info("TestProto")
+	info, err := serviceNic.Resources().Registry().Info("TestProtoList")
+	if err != nil {
+		Log.Fail(t, err)
+		return
+	}
+	pbList, _ := info.NewInstance()
+
+	info, _ = serviceNic.Resources().Registry().Info("TestProto")
 	pb, _ := info.NewInstance()
 
 	webNic, svr, ok := createWebServer(t)
@@ -105,7 +120,7 @@ func TestRestServer2(t *testing.T) {
 
 	time.Sleep(time.Second * 3)
 
-	restClient, ok := createRestClient(t, pb)
+	restClient, ok := createRestClient(t, pbList)
 	if !ok {
 		return
 	}
@@ -114,14 +129,15 @@ func TestRestServer2(t *testing.T) {
 	field := v.Elem().FieldByName("MyString")
 	field.Set(reflect.ValueOf("Hello"))
 
-	resp, err := restClient.POST("0/Tests", "TestProto", "", "", pb.(proto.Message))
+	resp, err := restClient.POST("0/Tests", "TestProtoList", "", "", pb.(proto.Message))
 	if err != nil {
 		Log.Fail(t, err)
 		return
 	}
 
 	v = reflect.ValueOf(resp)
-	field = v.Elem().FieldByName("MyString")
+	field = v.Elem().FieldByName("List")
+	field = field.Index(0).Elem().FieldByName("MyString")
 	if field.String() != "Hello" {
 		Log.Fail(t, "Expected the same object")
 		return
