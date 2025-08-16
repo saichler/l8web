@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/layer8/go/overlay/health"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"io"
@@ -83,7 +84,14 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	resp := this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
+	var resp ifs.IElements
+	if this.serviceName == health.ServiceName {
+		this.vnic.Resources().Logger().Info("Sending to vnet")
+		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body)
+	} else {
+		resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
+	}
+
 	if resp.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error from single request:\n"))
