@@ -2,13 +2,15 @@ package server
 
 import (
 	"errors"
+	"io"
+	"net/http"
+	"reflect"
+	"strings"
+
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/layer8/go/overlay/health"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"io"
-	"net/http"
-	"reflect"
 )
 
 type ServiceHandler struct {
@@ -82,6 +84,19 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("body for method " + method + string(data) + "\n"))
 			w.Write([]byte(err.Error()))
 			return
+		}
+	}
+	if strings.ToLower(method) == "get" {
+		qData := r.URL.Query().Get("body")
+		if qData != "" {
+			err = protojson.Unmarshal([]byte(qData), body)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Failed to unmarshal query body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
+				w.Write([]byte("body for method " + method + string(data) + "\n"))
+				w.Write([]byte(err.Error()))
+				return
+			}
 		}
 	}
 	var resp ifs.IElements
