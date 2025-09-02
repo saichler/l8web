@@ -121,7 +121,10 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	j, e := protojson.Marshal(response.(proto.Message))
+	marshalOptions := protojson.MarshalOptions{
+		UseEnumNumbers: true,
+	}
+	j, e := marshalOptions.Marshal(response.(proto.Message))
 	if e != nil {
 		w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(response).Elem().Type().Name()))
 		w.Write([]byte(e.Error()))
