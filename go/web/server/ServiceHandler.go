@@ -102,9 +102,9 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	var resp ifs.IElements
 	if this.serviceName == health.ServiceName {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
-		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body)
+		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, 30)
 	} else {
-		resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body)
+		resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body, 30)
 	}
 
 	if resp.Error() != nil {

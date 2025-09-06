@@ -1,13 +1,14 @@
 package server
 
 import (
+	"time"
+
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types"
 	"github.com/saichler/l8utils/go/utils/web"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/plugins"
-	"time"
 )
 
 const (
@@ -68,7 +69,7 @@ func (this *WebService) Get(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 func (this *WebService) Failed(pb ifs.IElements, vnic ifs.IVNic, msg *ifs.Message) ifs.IElements {
 	return nil
 }
-func (this *WebService) TransactionMethod() ifs.ITransactionMethod {
+func (this *WebService) TransactionConfig() ifs.ITransactionConfig {
 	return nil
 }
 func (this *WebService) WebService() ifs.IWebService {
