@@ -116,8 +116,11 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	response, e := resp.AsList(this.vnic.Resources().Registry())
 	if e != nil {
-		w.Write([]byte("Erorr as list:"))
-		w.Write([]byte(e.Error()))
+		w.Write([]byte("{}"))
+		/*
+			w.Write([]byte("Erorr as list:"))
+			w.Write([]byte(e.Error()))
+		*/
 		return
 	}
 
