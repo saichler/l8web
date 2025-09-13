@@ -15,6 +15,7 @@ var (
 	webUIFileMapMutex sync.RWMutex
 	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
 	webUIHandlerRegistryMutex sync.RWMutex
+	rootHandlerRegistered = false
 )
 
 func (this *RestServer) LoadWebUI() {
@@ -32,6 +33,12 @@ func (this *RestServer) LoadWebUI() {
 	
 	// Scan and register all web files
 	this.loadWebDir("/", webDir)
+	
+	// Register smart root handler (only once) that can distinguish between index.html and 404s
+	if !rootHandlerRegistered {
+		http.HandleFunc("/", this.smartRootHandler)
+		rootHandlerRegistered = true
+	}
 }
 
 func (this *RestServer) getWebDirectory() string {
@@ -78,17 +85,20 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 				webUIFileMap[indexPath] = fullFilePath
 				webUIFileMapMutex.Unlock()
 				
-				// Check if handler is already registered
-				webUIHandlerRegistryMutex.RLock()
-				_, exists := webUIHandlerRegistry[indexPath]
-				webUIHandlerRegistryMutex.RUnlock()
-				
-				if !exists {
-					handler := this.createDynamicHandler(indexPath)
-					webUIHandlerRegistryMutex.Lock()
-					webUIHandlerRegistry[indexPath] = handler
-					webUIHandlerRegistryMutex.Unlock()
-					http.HandleFunc(indexPath, handler)
+				// Don't register handlers for index.html files - let smartRootHandler handle them
+				// Only register specific handlers for non-root index.html files
+				if indexPath != "/" {
+					webUIHandlerRegistryMutex.RLock()
+					_, exists := webUIHandlerRegistry[indexPath]
+					webUIHandlerRegistryMutex.RUnlock()
+					
+					if !exists {
+						handler := this.createDynamicHandler(indexPath)
+						webUIHandlerRegistryMutex.Lock()
+						webUIHandlerRegistry[indexPath] = handler
+						webUIHandlerRegistryMutex.Unlock()
+						http.HandleFunc(indexPath, handler)
+					}
 				}
 			} else {
 				fmt.Println("Loaded file:", webPath)
@@ -134,6 +144,50 @@ func (this *RestServer) createDynamicHandler(path string) http.HandlerFunc {
 			w.Write([]byte("File Not Found"))
 		}
 	}
+}
+
+func (this *RestServer) smartRootHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if this looks like an API endpoint (has prefix)
+	if this.Prefix != "" && strings.HasPrefix(r.URL.Path, this.Prefix) {
+		// This is likely an API endpoint, let it pass through (404 will be handled by API)
+		http.NotFound(w, r)
+		return
+	}
+	
+	webUIFileMapMutex.RLock()
+	
+	// Check for exact file match first
+	filePath, exists := webUIFileMap[r.URL.Path]
+	if exists {
+		webUIFileMapMutex.RUnlock()
+		// Add cache-busting headers
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		http.ServeFile(w, r, filePath)
+		return
+	}
+	
+	// Check for root index.html if requesting root
+	if r.URL.Path == "/" {
+		rootIndexPath, hasRootIndex := webUIFileMap["/"]
+		if hasRootIndex {
+			webUIFileMapMutex.RUnlock()
+			// Add cache-busting headers
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Set("Pragma", "no-cache")
+			w.Header().Set("Expires", "0")
+			http.ServeFile(w, r, rootIndexPath)
+			return
+		}
+	}
+	
+	webUIFileMapMutex.RUnlock()
+	
+	// Custom 404 response for everything else
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("File Not Found"))
 }
 
 
