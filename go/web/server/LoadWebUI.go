@@ -20,15 +20,12 @@ var (
 func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
 	
-	// Clear and reload web UI file mappings
+	// Clear and reload web UI file mappings (but keep handler registry intact)
 	webUIFileMapMutex.Lock()
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex.Unlock()
 	
-	// Clear handler registry
-	webUIHandlerRegistryMutex.Lock()
-	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
-	webUIHandlerRegistryMutex.Unlock()
+	// DO NOT clear handler registry - handlers remain registered in ServeMux
 	
 	// Determine the web directory path
 	webDir := this.getWebDirectory()
