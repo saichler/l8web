@@ -13,14 +13,18 @@ import (
 var (
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex sync.RWMutex
-	webUIHandlerRegistered = false
 )
 
 func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
 	
-	// Clear previous web UI file mappings
+	// Clear previous web UI file mappings and handlers
 	webUIFileMapMutex.Lock()
+	// Store old handlers to remove them
+	oldPaths := make([]string, 0, len(webUIFileMap))
+	for path := range webUIFileMap {
+		oldPaths = append(oldPaths, path)
+	}
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex.Unlock()
 	
@@ -28,13 +32,7 @@ func (this *RestServer) LoadWebUI() {
 	webDir := this.getWebDirectory()
 	
 	// Scan and register all web files
-	this.scanWebDir("/", webDir)
-	
-	// Register a catch-all handler for web files (only once)
-	if !webUIHandlerRegistered {
-		http.HandleFunc("/", this.serveWebFile)
-		webUIHandlerRegistered = true
-	}
+	this.loadWebDir("/", webDir)
 }
 
 func (this *RestServer) getWebDirectory() string {
@@ -56,21 +54,18 @@ func (this *RestServer) getWebDirectory() string {
 	return "web"
 }
 
-func (this *RestServer) scanWebDir(path string, webDir string) {
+func (this *RestServer) loadWebDir(path string, webDir string) {
 	dirName := concat(webDir, path)
 	files, err := os.ReadDir(dirName)
 	if err != nil {
-		fmt.Println("Error scanning web UI:", err)
+		fmt.Println("Error loading web UI:", err)
 		return
 	}
-	
-	webUIFileMapMutex.Lock()
-	defer webUIFileMapMutex.Unlock()
 	
 	for _, file := range files {
 		webPath := concat(path, file.Name())
 		if file.IsDir() {
-			this.scanWebDir(concat(webPath, "/"), webDir)
+			this.loadWebDir(concat(webPath, "/"), webDir)
 		} else {
 			fullFilePath := filepath.Join(webDir, path, file.Name())
 			if file.Name() == "index.html" {
@@ -78,40 +73,38 @@ func (this *RestServer) scanWebDir(path string, webDir string) {
 				if indexPath != "/" && !strings.HasSuffix(indexPath, "/") {
 					indexPath += "/"
 				}
+				fmt.Println("Loaded index.html at path:", indexPath)
+				// Store mapping and register handler
+				webUIFileMapMutex.Lock()
 				webUIFileMap[indexPath] = fullFilePath
-				fmt.Println("Mapped index.html:", indexPath, "->", fullFilePath)
+				webUIFileMapMutex.Unlock()
+				
+				http.HandleFunc(indexPath, func(w http.ResponseWriter, r *http.Request) {
+					// Add cache-busting headers
+					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+					w.Header().Set("Pragma", "no-cache")
+					w.Header().Set("Expires", "0")
+					http.ServeFile(w, r, fullFilePath)
+				})
 			} else {
+				fmt.Println("Loaded file:", webPath)
+				// Store mapping and register handler
+				webUIFileMapMutex.Lock()
 				webUIFileMap[webPath] = fullFilePath
-				fmt.Println("Mapped file:", webPath, "->", fullFilePath)
+				webUIFileMapMutex.Unlock()
+				
+				http.HandleFunc(webPath, func(w http.ResponseWriter, r *http.Request) {
+					// Add cache-busting headers
+					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+					w.Header().Set("Pragma", "no-cache")
+					w.Header().Set("Expires", "0")
+					http.ServeFile(w, r, fullFilePath)
+				})
 			}
 		}
 	}
 }
 
-func (this *RestServer) serveWebFile(w http.ResponseWriter, r *http.Request) {
-	webUIFileMapMutex.RLock()
-	filePath, exists := webUIFileMap[r.URL.Path]
-	webUIFileMapMutex.RUnlock()
-	
-	if !exists {
-		// Try to find index.html for directory requests
-		if strings.HasSuffix(r.URL.Path, "/") {
-			webUIFileMapMutex.RLock()
-			filePath, exists = webUIFileMap[r.URL.Path]
-			webUIFileMapMutex.RUnlock()
-		}
-	}
-	
-	if exists {
-		// Add cache-busting headers
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Header().Set("Expires", "0")
-		http.ServeFile(w, r, filePath)
-	} else {
-		http.NotFound(w, r)
-	}
-}
 
 func concat(strs ...string) string {
 	buff := bytes.Buffer{}
