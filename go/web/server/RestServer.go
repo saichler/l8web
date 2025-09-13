@@ -39,7 +39,7 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs.Prefix = config.Prefix
 
 	http.DefaultServeMux = http.NewServeMux()
-	rs.loadWebUI()
+	rs.LoadWebUI()
 
 	if rs.CertName != "" {
 		_, err := os.Open(rs.CertName + ".crt")

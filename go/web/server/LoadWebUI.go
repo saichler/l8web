@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func (this *RestServer) loadWebUI() {
+func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
 	fs := http.FileServer(http.Dir("web"))
 	this.loadWebDir("/", fs)
