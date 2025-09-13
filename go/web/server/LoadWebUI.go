@@ -15,6 +15,7 @@ var (
 	webUIFileMapMutex sync.RWMutex
 	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
 	webUIHandlerRegistryMutex sync.RWMutex
+	custom404HandlerRegistered = false
 )
 
 func (this *RestServer) LoadWebUI() {
@@ -32,6 +33,12 @@ func (this *RestServer) LoadWebUI() {
 	
 	// Scan and register all web files
 	this.loadWebDir("/", webDir)
+	
+	// Register custom 404 handler (only once)
+	if !custom404HandlerRegistered {
+		http.HandleFunc("/", this.custom404Handler)
+		custom404HandlerRegistered = true
+	}
 }
 
 func (this *RestServer) getWebDirectory() string {
@@ -131,6 +138,34 @@ func (this *RestServer) createDynamicHandler(path string) http.HandlerFunc {
 			http.NotFound(w, r)
 		}
 	}
+}
+
+func (this *RestServer) custom404Handler(w http.ResponseWriter, r *http.Request) {
+	// Check if this looks like an API endpoint (has prefix + numeric service area)
+	if this.Prefix != "" && strings.HasPrefix(r.URL.Path, this.Prefix) {
+		// This is likely an API endpoint, let it pass through to be handled by API handlers
+		http.NotFound(w, r)
+		return
+	}
+	
+	// Check if we have a file for this exact path
+	webUIFileMapMutex.RLock()
+	filePath, exists := webUIFileMap[r.URL.Path]
+	webUIFileMapMutex.RUnlock()
+	
+	if exists {
+		// Add cache-busting headers
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		http.ServeFile(w, r, filePath)
+		return
+	}
+	
+	// Custom 404 response for non-API requests
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("File Not Found"))
 }
 
 
