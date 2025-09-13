@@ -64,11 +64,22 @@ func (this *RestServer) loadWebDir(path string, fs http.Handler, webDir string) 
 				fmt.Println("Loaded index.html at path:", indexPath)
 				fullFilePath := filepath.Join(webDir, path, "index.html")
 				http.HandleFunc(indexPath, func(w http.ResponseWriter, r *http.Request) {
+					// Add cache-busting headers
+					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+					w.Header().Set("Pragma", "no-cache")
+					w.Header().Set("Expires", "0")
 					http.ServeFile(w, r, fullFilePath)
 				})
 			} else {
 				fmt.Println("Loaded file:", webPath)
-				http.DefaultServeMux.HandleFunc(webPath, fs.ServeHTTP)
+				fullFilePath := filepath.Join(webDir, path, file.Name())
+				http.DefaultServeMux.HandleFunc(webPath, func(w http.ResponseWriter, r *http.Request) {
+					// Add cache-busting headers for all files
+					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+					w.Header().Set("Pragma", "no-cache")
+					w.Header().Set("Expires", "0")
+					http.ServeFile(w, r, fullFilePath)
+				})
 			}
 		}
 	}
