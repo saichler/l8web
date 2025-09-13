@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func (this *RestServer) LoadWebUI() {
@@ -54,9 +55,16 @@ func (this *RestServer) loadWebDir(path string, fs http.Handler, webDir string) 
 			this.loadWebDir(concat(webPath, "/"), fs, webDir)
 		} else {
 			if file.Name() == "index.html" {
-				fmt.Println("Loaded index.html")
-				http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-					http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
+				indexPath := path
+				if indexPath == "/" {
+					indexPath = "/"
+				} else if !strings.HasSuffix(indexPath, "/") {
+					indexPath += "/"
+				}
+				fmt.Println("Loaded index.html at path:", indexPath)
+				fullFilePath := filepath.Join(webDir, path, "index.html")
+				http.HandleFunc(indexPath, func(w http.ResponseWriter, r *http.Request) {
+					http.ServeFile(w, r, fullFilePath)
 				})
 			} else {
 				fmt.Println("Loaded file:", webPath)
