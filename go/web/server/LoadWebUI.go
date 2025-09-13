@@ -13,20 +13,22 @@ import (
 var (
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex sync.RWMutex
+	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
+	webUIHandlerRegistryMutex sync.RWMutex
 )
 
 func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
 	
-	// Clear previous web UI file mappings and handlers
+	// Clear and reload web UI file mappings
 	webUIFileMapMutex.Lock()
-	// Store old handlers to remove them
-	oldPaths := make([]string, 0, len(webUIFileMap))
-	for path := range webUIFileMap {
-		oldPaths = append(oldPaths, path)
-	}
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex.Unlock()
+	
+	// Clear handler registry
+	webUIHandlerRegistryMutex.Lock()
+	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
+	webUIHandlerRegistryMutex.Unlock()
 	
 	// Determine the web directory path
 	webDir := this.getWebDirectory()
@@ -74,33 +76,62 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 					indexPath += "/"
 				}
 				fmt.Println("Loaded index.html at path:", indexPath)
-				// Store mapping and register handler
+				// Store mapping
 				webUIFileMapMutex.Lock()
 				webUIFileMap[indexPath] = fullFilePath
 				webUIFileMapMutex.Unlock()
 				
-				http.HandleFunc(indexPath, func(w http.ResponseWriter, r *http.Request) {
-					// Add cache-busting headers
-					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-					w.Header().Set("Pragma", "no-cache")
-					w.Header().Set("Expires", "0")
-					http.ServeFile(w, r, fullFilePath)
-				})
+				// Check if handler is already registered
+				webUIHandlerRegistryMutex.RLock()
+				_, exists := webUIHandlerRegistry[indexPath]
+				webUIHandlerRegistryMutex.RUnlock()
+				
+				if !exists {
+					handler := this.createDynamicHandler(indexPath)
+					webUIHandlerRegistryMutex.Lock()
+					webUIHandlerRegistry[indexPath] = handler
+					webUIHandlerRegistryMutex.Unlock()
+					http.HandleFunc(indexPath, handler)
+				}
 			} else {
 				fmt.Println("Loaded file:", webPath)
-				// Store mapping and register handler
+				// Store mapping
 				webUIFileMapMutex.Lock()
 				webUIFileMap[webPath] = fullFilePath
 				webUIFileMapMutex.Unlock()
 				
-				http.HandleFunc(webPath, func(w http.ResponseWriter, r *http.Request) {
-					// Add cache-busting headers
-					w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-					w.Header().Set("Pragma", "no-cache")
-					w.Header().Set("Expires", "0")
-					http.ServeFile(w, r, fullFilePath)
-				})
+				// Check if handler is already registered
+				webUIHandlerRegistryMutex.RLock()
+				_, exists := webUIHandlerRegistry[webPath]
+				webUIHandlerRegistryMutex.RUnlock()
+				
+				if !exists {
+					handler := this.createDynamicHandler(webPath)
+					webUIHandlerRegistryMutex.Lock()
+					webUIHandlerRegistry[webPath] = handler
+					webUIHandlerRegistryMutex.Unlock()
+					http.HandleFunc(webPath, handler)
+				}
 			}
+		}
+	}
+}
+
+func (this *RestServer) createDynamicHandler(path string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Dynamically look up the current file path
+		webUIFileMapMutex.RLock()
+		filePath, exists := webUIFileMap[path]
+		webUIFileMapMutex.RUnlock()
+		
+		if exists {
+			// Add cache-busting headers
+			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+			w.Header().Set("Pragma", "no-cache")
+			w.Header().Set("Expires", "0")
+			http.ServeFile(w, r, filePath)
+		} else {
+			http.NotFound(w, r)
 		}
 	}
 }
