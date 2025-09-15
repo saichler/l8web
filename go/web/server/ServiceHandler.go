@@ -21,6 +21,8 @@ type ServiceHandler struct {
 	method2Resp map[string]proto.Message
 }
 
+var Timeout = 30
+
 func (this *ServiceHandler) addEndPoint(method, body, resp string) {
 	if body != "" {
 		info, err := this.vnic.Resources().Registry().Info(body)
@@ -102,9 +104,9 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	var resp ifs.IElements
 	if this.serviceName == health.ServiceName {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
-		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, 30)
+		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	} else {
-		resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, 30)
+		resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	}
 
 	if resp.Error() != nil {
