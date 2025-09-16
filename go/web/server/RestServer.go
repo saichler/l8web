@@ -3,16 +3,15 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8utils/go/utils/certs"
-	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/layer8/go/overlay/protocol"
-	"google.golang.org/protobuf/proto"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8utils/go/utils/maps"
+	"google.golang.org/protobuf/proto"
 )
 
 var endPoints = maps.NewSyncMap()
@@ -44,7 +43,9 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	if rs.CertName != "" {
 		_, err := os.Open(rs.CertName + ".crt")
 		if err != nil {
-			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
+			fmt.Println("Error loading certificate:", err)
+			//return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
+			panic(err)
 		}
 	}
 
