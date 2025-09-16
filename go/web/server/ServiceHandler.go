@@ -22,6 +22,7 @@ type ServiceHandler struct {
 }
 
 var Timeout = 30
+var Target = ""
 
 func (this *ServiceHandler) addEndPoint(method, body, resp string) {
 	if body != "" {
@@ -106,7 +107,11 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
 		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	} else {
-		resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+		if Target != "" {
+			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+		} else {
+			resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+		}
 	}
 
 	if resp.Error() != nil {
