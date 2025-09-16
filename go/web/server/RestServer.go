@@ -99,17 +99,20 @@ func (this *RestServer) Start() error {
 		Addr:    this.Host + ":" + strconv.Itoa(this.Port+2000),
 		Handler: http.DefaultServeMux,
 	}
+
 	if this.CertName != "" {
 		//For development
 		go func() {
-			err = this.webServerDev.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
+			err = this.webServer.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
 			if err != nil {
 				fmt.Println("Error starting dev web server ", err)
 			}
 		}()
 		err = this.webServer.ListenAndServeTLS(this.CertName+".crt", this.CertName+".crtKey")
 		if err != nil && !strings.Contains(err.Error(), "Server closed") {
-			panic(err)
+			fmt.Println("Error starting web server ", err)
+			this.CertName = ""
+			err = this.webServer.ListenAndServe()
 		}
 	} else {
 		err = this.webServer.ListenAndServe()
