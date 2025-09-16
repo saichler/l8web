@@ -72,7 +72,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Cannot find pb for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
-		fmt.Println("Cannot find pb for method " + method + "\n"))
+		fmt.Println("Cannot find pb for method " + method + "\n")
 		return
 	}
 	data, err := io.ReadAll(r.Body)
@@ -80,7 +80,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Failed to read body for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
-		fmt.Println("Failed to read body for method " + method + "\n"))
+		fmt.Println("Failed to read body for method " + method + "\n")
 		return
 	}
 	if data != nil && len(data) > 0 {
@@ -91,7 +91,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("body for method " + method + string(data) + "\n"))
 			w.Write([]byte(err.Error()))
 			fmt.Println("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n")
-			fmt.Println("body for method " + method + string(data) + "\n"))
+			fmt.Println("body for method " + method + string(data) + "\n")
 			return
 		}
 	}
