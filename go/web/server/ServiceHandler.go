@@ -72,6 +72,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Cannot find pb for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
+		fmt.Println("Cannot find pb for method " + method + "\n"))
 		return
 	}
 	data, err := io.ReadAll(r.Body)
@@ -79,6 +80,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Failed to read body for method " + method + "\n"))
 		w.Write([]byte(err.Error()))
+		fmt.Println("Failed to read body for method " + method + "\n"))
 		return
 	}
 	if data != nil && len(data) > 0 {
@@ -88,6 +90,8 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
 			w.Write([]byte("body for method " + method + string(data) + "\n"))
 			w.Write([]byte(err.Error()))
+			fmt.Println("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n")
+			fmt.Println("body for method " + method + string(data) + "\n"))
 			return
 		}
 	}
@@ -100,6 +104,8 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("Failed to unmarshal query body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
 				w.Write([]byte("body for method " + method + string(data) + "\n"))
 				w.Write([]byte(err.Error()))
+				fmt.Println("Failed to unmarshal query body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n")
+				fmt.Println("body for method " + method + string(data) + "\n")
 				return
 			}
 		}
@@ -120,6 +126,8 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error from single request:\n"))
 		w.Write([]byte(resp.Error().Error()))
+		fmt.Println("Error from single request:\n")
+		fmt.Println(resp.Error().Error())
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -140,6 +148,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	if e != nil {
 		w.Write([]byte("Erorr marshaling:" + reflect.ValueOf(response).Elem().Type().Name()))
 		w.Write([]byte(e.Error()))
+		fmt.Println("Erorr marshaling:" + reflect.ValueOf(response).Elem().Type().Name())
 	} else {
 		w.Write(j)
 	}
