@@ -106,7 +106,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
 		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	} else {
-		resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+		resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	}
 
 	if resp.Error() != nil {
