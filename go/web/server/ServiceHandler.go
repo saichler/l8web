@@ -118,7 +118,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		if Target != "" {
 			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 		} else {
-			resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 		}
 	}
 
