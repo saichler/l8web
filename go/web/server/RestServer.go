@@ -48,6 +48,8 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 			fmt.Println("Error loading certificate:", err)
 			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
 		}
+		//For development
+		certs.CreateLayer8Crt(rs.CertName+"-dev", protocol.MachineIP, int64(rs.Port+2000))
 	}
 
 	return rs, nil
@@ -93,6 +95,13 @@ func (this *RestServer) Start() error {
 		Handler: http.DefaultServeMux,
 	}
 	if this.CertName != "" {
+		//For development
+		go func() {
+			err = this.webServer.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
+			if err != nil {
+				fmt.Println("Error starting dev web server ", err)
+			}
+		}()
 		err = this.webServer.ListenAndServeTLS(this.CertName+".crt", this.CertName+".crtKey")
 		if err != nil && !strings.Contains(err.Error(), "Server closed") {
 			panic(err)
