@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -64,6 +65,7 @@ func (this *ServiceHandler) ServiceArea() byte {
 }
 
 func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Web Server invoked")
 	method := r.Method
 	body, err := this.newBody(method)
 	if err != nil {
