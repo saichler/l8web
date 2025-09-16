@@ -19,7 +19,8 @@ import (
 var endPoints = maps.NewSyncMap()
 
 type RestServer struct {
-	webServer *http.Server
+	webServer    *http.Server
+	webServerDev *http.Server
 	RestServerConfig
 }
 
@@ -94,10 +95,14 @@ func (this *RestServer) Start() error {
 		Addr:    this.Host + ":" + strconv.Itoa(this.Port),
 		Handler: http.DefaultServeMux,
 	}
+	this.webServerDev = &http.Server{
+		Addr:    this.Host + ":" + strconv.Itoa(this.Port+2000),
+		Handler: http.DefaultServeMux,
+	}
 	if this.CertName != "" {
 		//For development
 		go func() {
-			err = this.webServer.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
+			err = this.webServerDev.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
 			if err != nil {
 				fmt.Println("Error starting dev web server ", err)
 			}
