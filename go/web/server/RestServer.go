@@ -107,7 +107,7 @@ func (this *RestServer) Start() error {
 	if this.CertName != "" {
 		//For development
 		go func() {
-			err = this.webServer.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
+			err = this.webServerDev.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
 			if err != nil {
 				fmt.Println("Error starting dev web server ", err)
 			}
