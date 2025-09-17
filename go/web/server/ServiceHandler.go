@@ -24,6 +24,7 @@ type ServiceHandler struct {
 
 var Timeout = 30
 var Target = ""
+var Method = ifs.M_Leader
 
 func (this *ServiceHandler) addEndPoint(method, body, resp string) {
 	if body != "" {
@@ -118,7 +119,13 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		if Target != "" {
 			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 		} else {
-			resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			if Method == ifs.M_Leader {
+				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			} else if Method == ifs.M_Local {
+				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			} else {
+				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			}
 		}
 	}
 
