@@ -44,13 +44,17 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs.LoadWebUI()
 
 	if rs.CertName != "" {
+		//For development
 		_, err := os.Open(rs.CertName + ".crt")
 		if err != nil {
-			fmt.Println("Error loading certificate:", err)
-			return rs, certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
+			fmt.Println("Error loading dev certificate:", err)
+			certs.CreateLayer8Crt(rs.CertName+"-dev", protocol.MachineIP, int64(rs.Port+2000))
 		}
-		//For development
-		certs.CreateLayer8Crt(rs.CertName+"-dev", protocol.MachineIP, int64(rs.Port+2000))
+		_, err = os.Open(rs.CertName + ".crt")
+		if err != nil {
+			fmt.Println("Error loading certificate:", err)
+			certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
+		}
 	}
 
 	return rs, nil
