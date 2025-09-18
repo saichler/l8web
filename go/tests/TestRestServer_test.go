@@ -2,9 +2,15 @@ package tests
 
 import (
 	"encoding/base64"
+	"os"
+	"reflect"
+	"testing"
+	"time"
+
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8types/go/types/l8health"
+	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8web/go/web/client"
 	"github.com/saichler/l8web/go/web/server"
 	"github.com/saichler/layer8/go/overlay/plugins"
@@ -12,10 +18,6 @@ import (
 	vnet2 "github.com/saichler/layer8/go/overlay/vnet"
 	"github.com/saichler/layer8/go/overlay/vnic"
 	"google.golang.org/protobuf/proto"
-	"os"
-	"reflect"
-	"testing"
-	"time"
 )
 
 const (
@@ -150,8 +152,8 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 	webNic.Start()
 	webNic.WaitForConnection()
 
-	webNic.Resources().Registry().Register(&types.Empty{})
-	webNic.Resources().Registry().Register(&types.Top{})
+	webNic.Resources().Registry().Register(&l8web.L8Empty{})
+	webNic.Resources().Registry().Register(&l8health.L8Top{})
 
 	serverConfig := &server.RestServerConfig{
 		Host:           protocol.MachineIP,
@@ -214,7 +216,7 @@ func PushPlugin(nic ifs.IVNic, name string) error {
 	if err != nil {
 		return err
 	}
-	pb := &types.Plugin{
+	pb := &l8web.L8Plugin{
 		Data: base64.StdEncoding.EncodeToString(data),
 	}
 	return plugins.LoadPlugin(pb, nic)

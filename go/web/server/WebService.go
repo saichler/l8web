@@ -5,7 +5,7 @@ import (
 
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types"
+	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/web"
 	"github.com/saichler/layer8/go/overlay/health"
 	"github.com/saichler/layer8/go/overlay/plugins"
@@ -21,7 +21,7 @@ type WebService struct {
 
 func (this *WebService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-	resources.Registry().Register(&types.WebService{})
+	resources.Registry().Register(&l8web.L8WebService{})
 	this.server = args[0].(ifs.IWebServer)
 	vnic, ok := listener.(ifs.IVNic)
 	if ok {
@@ -39,12 +39,12 @@ func (this *WebService) DeActivate() error {
 }
 
 func (this *WebService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
-	webService := pb.Element().(*types.WebService)
+	webService := pb.Element().(*l8web.L8WebService)
 	ws := &web.WebService{}
 	ws.DeSerialize(webService)
 	vnic.Resources().Logger().Info("Received Webservice ", ws.ServiceName(), " ", ws.ServiceArea())
 	if ws.Plugin() != "" {
-		plg := &types.Plugin{Data: ws.Plugin()}
+		plg := &l8web.L8Plugin{Data: ws.Plugin()}
 		plugins.LoadPlugin(plg, vnic)
 	}
 	this.server.RegisterWebService(ws, vnic)
