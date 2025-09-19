@@ -13,10 +13,10 @@ import (
 	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8web/go/web/client"
 	"github.com/saichler/l8web/go/web/server"
-	"github.com/saichler/layer8/go/overlay/plugins"
-	"github.com/saichler/layer8/go/overlay/protocol"
-	vnet2 "github.com/saichler/layer8/go/overlay/vnet"
-	"github.com/saichler/layer8/go/overlay/vnic"
+	"github.com/saichler/l8bus/go/overlay/plugins"
+	"github.com/saichler/l8bus/go/overlay/protocol"
+	vnet2 "github.com/saichler/l8bus/go/overlay/vnet"
+	"github.com/saichler/l8bus/go/overlay/vnic"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/layer8/go/overlay/health"
+	"github.com/saichler/l8bus/go/overlay/health"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
