@@ -167,7 +167,7 @@ func isTimeout(err error) bool {
 }
 
 func (rc *RestClient) Auth(user, pass string) error {
-	creds := &l8api.AuthUser{User: "admin", Pass: "admin"}
+	creds := &l8api.AuthUser{User: user, Pass: pass}
 	token, err := rc.Do("POST", "/auth", "AuthToken", "", "", creds, 5)
 	if err != nil {
 		return err
