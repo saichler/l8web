@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestAuth(t *testing.T) {
@@ -47,7 +49,8 @@ func TestAuth(t *testing.T) {
 	}()
 
 	user := &l8api.AuthUser{User: "admin", Pass: "admin"}
-
+	jsn, _ := protojson.Marshal(user)
+	fmt.Println(string(jsn))
 	restClient, ok := createRestClient2(t, user, "/")
 	if !ok {
 		return
@@ -58,6 +61,9 @@ func TestAuth(t *testing.T) {
 		Log.Fail(t, err)
 		return
 	}
+
+	jsn, _ = protojson.Marshal(resp)
+	fmt.Println(string(jsn))
 
 	authToken := resp.(*l8api.AuthToken)
 	if authToken.Error != "" {
@@ -71,4 +77,6 @@ func TestAuth(t *testing.T) {
 		Log.Fail(t, "Expected auth failure")
 		return
 	}
+	jsn, _ = protojson.Marshal(resp)
+	fmt.Println(string(jsn))
 }
