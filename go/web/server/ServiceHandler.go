@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8bus/go/overlay/health"
+	"github.com/saichler/l8types/go/ifs"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -20,6 +20,7 @@ type ServiceHandler struct {
 	vnic        ifs.IVNic
 	method2Body map[string]proto.Message
 	method2Resp map[string]proto.Message
+	authEnabled bool
 }
 
 var Timeout = 30
@@ -67,6 +68,21 @@ func (this *ServiceHandler) ServiceArea() byte {
 
 func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Web Server invoked")
+	aaaid := ""
+	if this.authEnabled {
+		bearer := r.Header.Get("Authorization")
+		if bearer == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		aaaid = id
+	}
+
 	method := r.Method
 	body, err := this.newBody(method)
 	if err != nil {
@@ -76,6 +92,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Cannot find pb for method " + method + "\n")
 		return
 	}
+
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -84,6 +101,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read body for method " + method + "\n")
 		return
 	}
+
 	if data != nil && len(data) > 0 {
 		err = protojson.Unmarshal(data, body)
 		if err != nil {
@@ -117,23 +135,23 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
 	} else {
 		if Target != "" {
-			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
 		} else {
 			if Method == ifs.M_Leader {
-				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
 			} else if Method == ifs.M_Local {
-				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
 			} else {
-				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
 			}
 		}
 	}
 
 	if resp.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error from single request:\n"))
+		w.Write([]byte("Error from single request:"))
 		w.Write([]byte(resp.Error().Error()))
-		fmt.Println("Error from single request:\n")
+		fmt.Println("Error from single request:")
 		fmt.Println(resp.Error().Error())
 		return
 	}

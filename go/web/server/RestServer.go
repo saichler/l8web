@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8utils/go/utils/certs"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"github.com/saichler/l8bus/go/overlay/protocol"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -39,6 +39,7 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs.Host = config.Host
 	rs.Port = config.Port
 	rs.Prefix = config.Prefix
+	rs.Authentication = config.Authentication
 
 	http.DefaultServeMux = http.NewServeMux()
 	rs.LoadWebUI()
@@ -71,7 +72,7 @@ func (this *RestServer) patternOf(handler *ServiceHandler) string {
 }
 
 func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
-	handler := &ServiceHandler{}
+	handler := &ServiceHandler{authEnabled: this.Authentication}
 	handler.serviceName = ws.ServiceName()
 	handler.serviceArea = ws.ServiceArea()
 	handler.vnic = vnic

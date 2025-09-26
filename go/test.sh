@@ -11,26 +11,19 @@ rm -rf vendor
 go mod init
 GOPROXY=direct GOPRIVATE=github.com go mod tidy
 go mod vendor
-cp ./vendor/github.com/saichler/l8utils/go/utils/resources/build-test-security.sh .
-chmod +x ./build-test-security.sh
-rm -rf vendor
-./build-test-security.sh
-rm -rf ./build-test-security.sh
 
-mkdir ./tmp
-cd ./tmp
-git clone https://github.com/saichler/l8test
-cd ./l8test/go/infra/t_plugin/registry
+rm -rf ./tests/*.so
+
+cp ../../l8secure/go/secure/provider/loader.so ./tests/loader.so
+
+cd ../../l8test/go/infra/t_plugin/registry
 ./build.sh
-mv *.so ../../../../../../tests/.
 cd ../service
 ./build.sh
-mv *.so ../../../../../../tests/.
-cd ../../../../../../
-rm -rf tmp
+cd ../../../../../l8web/go
 
-go mod vendor
-rm -rf ./tests/test.*
+cp ../../l8test/go/infra/t_plugin/registry/*.so ./tests/.
+cp ../../l8test/go/infra/t_plugin/service/*.so ./tests/.
 
 # Run unit tests with coverage
 go test -tags=unit -v -coverpkg=./web/... -coverprofile=cover.html ./... --failfast

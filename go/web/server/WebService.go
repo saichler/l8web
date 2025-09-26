@@ -1,14 +1,19 @@
 package server
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"time"
 
-	"github.com/saichler/l8srlz/go/serialize/object"
-	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types/l8web"
-	"github.com/saichler/l8utils/go/utils/web"
 	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8bus/go/overlay/plugins"
+	"github.com/saichler/l8srlz/go/serialize/object"
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8api"
+	"github.com/saichler/l8types/go/types/l8web"
+	"github.com/saichler/l8utils/go/utils/web"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -16,11 +21,13 @@ const (
 )
 
 type WebService struct {
-	server ifs.IWebServer
+	server    ifs.IWebServer
+	resources ifs.IResources
 }
 
 func (this *WebService) Activate(serviceName string, serviceArea byte,
 	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
+	this.resources = resources
 	resources.Registry().Register(&l8web.L8WebService{})
 	this.server = args[0].(ifs.IWebServer)
 	vnic, ok := listener.(ifs.IVNic)
@@ -31,7 +38,44 @@ func (this *WebService) Activate(serviceName string, serviceArea byte,
 			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
 		}()
 	}
+	http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 	return nil
+}
+
+func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to read user/pass #1"))
+		w.Write([]byte(err.Error()))
+		fmt.Println("Failed to read user/pass #1")
+		return
+	}
+	user := &l8api.AuthUser{}
+	err = protojson.Unmarshal(data, user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to read user/pass #2"))
+		w.Write([]byte(err.Error()))
+		fmt.Println("Failed to read user/pass #2")
+		return
+	}
+	token, err := this.resources.Security().Authenticate(user.User, user.Pass)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		authToken := &l8api.AuthToken{}
+		authToken.Error = err.Error()
+		jsn, _ := protojson.Marshal(authToken)
+		w.Write(jsn)
+		fmt.Println("Failed to authenticate user/pass #3")
+		return
+	}
+
+	authToken := &l8api.AuthToken{}
+	authToken.Token = token
+	w.WriteHeader(http.StatusOK)
+	jsn, _ := protojson.Marshal(authToken)
+	w.Write(jsn)
 }
 
 func (this *WebService) DeActivate() error {

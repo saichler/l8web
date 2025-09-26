@@ -7,15 +7,17 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/saichler/l8types/go/ifs"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"io"
 	nethttp "net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8api"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type RestClient struct {
@@ -93,7 +95,7 @@ func (rc *RestClient) buildURL(end, vars string) string {
 	url.WriteString(rc.Host)
 	url.WriteString(":")
 	url.WriteString(strconv.Itoa(rc.Port))
-	if rc.Prefix != "" {
+	if rc.Prefix != "" && end != "/auth" {
 		url.WriteString(rc.Prefix)
 	}
 	url.WriteString(end)
@@ -162,6 +164,16 @@ func isTimeout(err error) bool {
 		return true
 	}
 	return false
+}
+
+func (rc *RestClient) Auth(user, pass string) error {
+	creds := &l8api.AuthUser{User: "admin", Pass: "admin"}
+	token, err := rc.Do("POST", "/auth", "AuthToken", "", "", creds, 5)
+	if err != nil {
+		return err
+	}
+	rc.Token = token.(*l8api.AuthToken).Token
+	return nil
 }
 
 func (rc *RestClient) Do(method, end, responseType, responseAttribute, vars string, pbBody proto.Message, tryCount int) (proto.Message, error) {
