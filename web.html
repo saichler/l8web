@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>l8web - Layer 8 Web Server & Client</title>
+    <title>Layer 8 Web Services - Advanced Web Infrastructure</title>
     <style>
         * {
             margin: 0;
@@ -11,41 +11,169 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary-color: #00a8ff;
+            --secondary-color: #00d4aa;
+            --accent-color: #ff6b6b;
+            --dark-bg: #0f1419;
+            --light-bg: #ffffff;
+            --text-dark: #1a1a1a;
+            --text-light: #f0f0f0;
+            --gradient-1: linear-gradient(135deg, #00a8ff 0%, #00d4aa 100%);
+            --gradient-2: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --gradient-3: linear-gradient(135deg, #00d4aa 0%, #00a8ff 100%);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            color: var(--text-dark);
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
+        /* Parallax Base Styles */
+        .parallax-container {
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 0;
-            position: fixed;
-            width: 100%;
+        .parallax-layer {
+            position: absolute;
             top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 120%;
+        }
+
+        .parallax-bg {
+            background: var(--gradient-1);
+            transform: translateZ(-2px) scale(3);
+        }
+
+        .parallax-mid {
+            transform: translateZ(-1px) scale(2);
+        }
+
+        .parallax-front {
+            transform: translateZ(0);
+        }
+
+        /* Full-page Hero Header */
+        .hero-header {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gradient-2);
+            overflow: hidden;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            color: white;
+            padding: 2rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        /* Custom SVG Illustrations */
+        .illustration-network {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .illustration-float {
+            position: absolute;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .illustration-1 {
+            top: 10%;
+            right: 10%;
+            animation-delay: 0s;
+        }
+
+        .illustration-2 {
+            bottom: 20%;
+            left: 5%;
+            animation-delay: 2s;
+        }
+
+        .illustration-3 {
+            top: 50%;
+            right: 5%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            width: 100%;
             z-index: 1000;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0);
+            backdrop-filter: blur(0px);
+            transition: all 0.3s ease;
+            padding: 1.5rem 0;
+        }
+
+        .nav-container.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
         }
 
         nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .nav-links {
@@ -56,95 +184,189 @@
 
         .nav-links a {
             text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: #667eea;
-        }
-
-        main {
-            margin-top: 80px;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 4rem 0;
             color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .hero h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        .nav-container.scrolled .nav-links a {
+            color: var(--text-dark);
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
         }
 
-        .cta-button {
-            display: inline-block;
-            background: #fff;
-            color: #667eea;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        /* Parallax Sections */
+        .parallax-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
         }
 
-        .section {
-            background: white;
-            margin: 2rem 0;
-            padding: 3rem 0;
+        .parallax-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 4rem;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            margin: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
         }
 
-        .section h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            color: #333;
+        /* Features Grid */
+        .features-container {
+            padding: 5rem 2rem;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
         }
 
         .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 2rem;
-            margin: 2rem 0;
+            margin-top: 3rem;
         }
 
         .feature-card {
-            background: #f8f9ff;
-            padding: 2rem;
-            border-radius: 15px;
-            text-align: center;
-            transition: transform 0.3s ease;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-1);
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
         }
 
         .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1.5rem;
         }
 
         .feature-card h3 {
-            color: #667eea;
+            color: var(--primary-color);
             margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        /* Architecture Section */
+        .architecture-section {
+            background: var(--gradient-3);
+            color: white;
+            padding: 5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .architecture-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .architecture-diagram {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .architecture-diagram pre {
+            color: white;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Code Examples */
+        .code-tabs {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin: 2rem 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            background: white;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
         }
 
         .code-block {
@@ -153,83 +375,92 @@
             padding: 1.5rem;
             border-radius: 10px;
             overflow-x: auto;
-            margin: 1rem 0;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        .architecture-diagram {
-            background: #f8f9ff;
-            padding: 2rem;
-            border-radius: 15px;
-            margin: 2rem 0;
-        }
-
-        .architecture-diagram pre {
-            font-family: monospace;
-            color: #333;
-        }
-
-        .tabs {
-            display: flex;
-            background: #f0f0f0;
-            border-radius: 10px 10px 0 0;
-            overflow: hidden;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 1rem;
-            text-align: center;
-            background: #e0e0e0;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .tab.active {
-            background: #667eea;
+        /* CTA Section */
+        .cta-section {
+            background: var(--gradient-2);
             color: white;
+            padding: 5rem 2rem;
+            text-align: center;
         }
 
-        .tab-content {
-            display: none;
-            padding: 2rem;
+        .cta-button {
+            display: inline-block;
             background: white;
-            border-radius: 0 0 10px 10px;
+            color: var(--primary-color);
+            padding: 1rem 2.5rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
         }
 
-        .tab-content.active {
-            display: block;
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
         }
 
-        footer {
-            background: #333;
+        .cta-button.secondary {
+            background: transparent;
             color: white;
+            border: 2px solid white;
+        }
+
+        .cta-button.secondary:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark-bg);
+            color: var(--text-light);
+            padding: 3rem 2rem;
             text-align: center;
-            padding: 2rem 0;
-            margin-top: 4rem;
         }
 
         .footer-links {
             display: flex;
             justify-content: center;
             gap: 2rem;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
         }
 
         .footer-links a {
-            color: #ccc;
+            color: var(--text-light);
             text-decoration: none;
+            transition: color 0.3s ease;
         }
 
         .footer-links a:hover {
-            color: white;
+            color: var(--primary-color);
         }
 
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
             }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
             .nav-links {
                 display: none;
             }
@@ -237,128 +468,262 @@
             .features-grid {
                 grid-template-columns: 1fr;
             }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .parallax-content {
+                padding: 2rem;
+                margin: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="container">
-            <div class="logo">l8web</div>
+    <!-- Navigation -->
+    <div class="nav-container" id="navbar">
+        <nav>
+            <div class="logo">Layer 8 Web Services</div>
             <ul class="nav-links">
-                <li><a href="#overview">Overview</a></li>
+                <li><a href="#home">Home</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#architecture">Architecture</a></li>
                 <li><a href="#usage">Usage</a></li>
                 <li><a href="#docs">Documentation</a></li>
             </ul>
         </nav>
-    </header>
+    </div>
 
-    <main>
-        <section class="hero">
-            <div class="container">
-                <h1>l8web</h1>
-                <p>Web Server & Client for the Layer 8 Framework</p>
-                <p>Go-based web server and client library designed for distributed systems</p>
-                <a href="#features" class="cta-button">Explore Features</a>
+    <!-- Full-page Hero Header with Parallax -->
+    <section id="home" class="hero-header parallax-container">
+        <!-- Background Layer -->
+        <div class="parallax-layer parallax-bg"></div>
+
+        <!-- Network Illustration -->
+        <svg class="illustration-network" viewBox="0 0 1440 800" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#00a8ff;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#00d4aa;stop-opacity:0.3" />
+                </linearGradient>
+            </defs>
+            <!-- Network nodes and connections -->
+            <circle cx="100" cy="100" r="5" fill="url(#grad1)"/>
+            <circle cx="300" cy="200" r="5" fill="url(#grad1)"/>
+            <circle cx="500" cy="150" r="5" fill="url(#grad1)"/>
+            <circle cx="700" cy="300" r="5" fill="url(#grad1)"/>
+            <circle cx="900" cy="250" r="5" fill="url(#grad1)"/>
+            <circle cx="1100" cy="400" r="5" fill="url(#grad1)"/>
+            <circle cx="1300" cy="350" r="5" fill="url(#grad1)"/>
+            <circle cx="200" cy="400" r="5" fill="url(#grad1)"/>
+            <circle cx="600" cy="500" r="5" fill="url(#grad1)"/>
+            <circle cx="1000" cy="600" r="5" fill="url(#grad1)"/>
+
+            <line x1="100" y1="100" x2="300" y2="200" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="300" y1="200" x2="500" y2="150" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="500" y1="150" x2="700" y2="300" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="700" y1="300" x2="900" y2="250" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="900" y1="250" x2="1100" y2="400" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="1100" y1="400" x2="1300" y2="350" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="200" y1="400" x2="600" y2="500" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="600" y1="500" x2="1000" y2="600" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="300" y1="200" x2="600" y2="500" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+            <line x1="700" y1="300" x2="1000" y2="600" stroke="url(#grad1)" stroke-width="1" opacity="0.5"/>
+        </svg>
+
+        <!-- Floating Illustrations -->
+        <svg class="illustration-float illustration-1" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="20" width="60" height="60" rx="10" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+            <circle cx="50" cy="50" r="15" fill="rgba(255,255,255,0.2)"/>
+        </svg>
+
+        <svg class="illustration-float illustration-2" width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="40,10 70,30 70,60 40,80 10,60 10,30" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+        </svg>
+
+        <svg class="illustration-float illustration-3" width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+            <path d="M45 10 L80 45 L45 80 L10 45 Z" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+            <circle cx="45" cy="45" r="10" fill="rgba(255,255,255,0.2)"/>
+        </svg>
+
+        <!-- Hero Content -->
+        <div class="hero-content">
+            <h1 class="hero-title">Layer 8 Web Services</h1>
+            <p class="hero-subtitle">Advanced Web Infrastructure for Distributed Systems</p>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                Comprehensive Go-based web server, client, and reverse proxy designed for the Layer 8 Framework
+            </p>
+            <a href="#features" class="cta-button">Explore Features</a>
+            <a href="https://github.com/saichler/l8web" class="cta-button secondary">View on GitHub</a>
+        </div>
+    </section>
+
+    <!-- Features Section with Parallax -->
+    <section id="features" class="features-container">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <h2 style="font-size: 3rem; margin-bottom: 1rem; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                Core Features
+            </h2>
+            <p style="font-size: 1.2rem; color: #6c757d; max-width: 800px; margin: 0 auto;">
+                Built for performance, security, and scalability in distributed environments
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="15" width="40" height="30" rx="3" fill="none" stroke="#00a8ff" stroke-width="2"/>
+                    <path d="M20 25 L30 35 L40 25" fill="none" stroke="#00d4aa" stroke-width="2"/>
+                    <circle cx="30" cy="30" r="3" fill="#00a8ff"/>
+                </svg>
+                <h3>RESTful API Server</h3>
+                <p>Full HTTP REST server with native Protocol Buffers integration, supporting all standard HTTP methods with automatic serialization.</p>
             </div>
-        </section>
 
-        <section id="overview" class="section">
-            <div class="container">
-                <h2>Overview</h2>
-                <p style="text-align: center; font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
-                    <strong>l8web</strong> is a Go-based web server and client library designed specifically for the Layer 8 distributed systems framework. 
-                    It provides RESTful HTTP endpoints that seamlessly integrate with the Layer 8 network overlay, enabling web-based access to distributed services.
-                </p>
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M30 10 L30 50 M15 25 L30 10 L45 25" fill="none" stroke="#00a8ff" stroke-width="2"/>
+                    <rect x="20" y="40" width="20" height="10" rx="2" fill="#00d4aa"/>
+                </svg>
+                <h3>Reverse Proxy</h3>
+                <p>Multi-domain reverse proxy with SSL termination, load balancing, WebSocket support, and intelligent request routing.</p>
             </div>
-        </section>
 
-        <section id="features" class="section">
-            <div class="container">
-                <h2>Features</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🌐</div>
-                        <h3>RESTful API Server</h3>
-                        <p>Full HTTP REST server supporting GET, POST, PUT, PATCH, and DELETE methods with native Protocol Buffers integration</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔒</div>
-                        <h3>TLS/HTTPS Support</h3>
-                        <p>Built-in SSL/TLS support with certificate management and bearer token authentication</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔍</div>
-                        <h3>Service Discovery</h3>
-                        <p>Automatic registration and discovery of web services with Layer 8 integration</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔌</div>
-                        <h3>Plugin System</h3>
-                        <p>Dynamic loading of service plugins with flexible configuration</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">📡</div>
-                        <h3>Multi-cast Communication</h3>
-                        <p>Integration with Layer 8's proximity-based routing and network overlay</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">⚡</div>
-                        <h3>High Performance Client</h3>
-                        <p>Full-featured REST client with timeout handling, retry logic, and compression support</p>
-                    </div>
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="30" cy="30" r="20" fill="none" stroke="#00a8ff" stroke-width="2"/>
+                    <path d="M30 20 L30 35 M25 30 L35 30" stroke="#00d4aa" stroke-width="2"/>
+                    <circle cx="30" cy="30" r="3" fill="#00a8ff"/>
+                </svg>
+                <h3>Service Discovery</h3>
+                <p>Automatic service registration and discovery with Layer 8 integration, enabling seamless distributed communication.</p>
+            </div>
+
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="15" width="30" height="30" rx="5" fill="none" stroke="#00a8ff" stroke-width="2"/>
+                    <path d="M25 25 L35 35 M35 25 L25 35" stroke="#00d4aa" stroke-width="2"/>
+                </svg>
+                <h3>TLS/HTTPS Security</h3>
+                <p>Built-in SSL/TLS with automatic certificate generation, bearer token authentication, and custom CA support.</p>
+            </div>
+
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="20" width="15" height="20" rx="2" fill="#00a8ff"/>
+                    <rect x="35" y="20" width="15" height="20" rx="2" fill="#00d4aa"/>
+                    <path d="M25 30 L35 30" stroke="#00a8ff" stroke-width="2"/>
+                </svg>
+                <h3>Plugin System</h3>
+                <p>Dynamic plugin loading with hot-reload capability, enabling extensible service implementations without restarts.</p>
+            </div>
+
+            <div class="feature-card">
+                <svg class="feature-icon" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="5" fill="#00a8ff"/>
+                    <circle cx="40" cy="20" r="5" fill="#00a8ff"/>
+                    <circle cx="30" cy="40" r="5" fill="#00d4aa"/>
+                    <path d="M20 20 L30 40 L40 20" fill="none" stroke="#00a8ff" stroke-width="1" opacity="0.5"/>
+                </svg>
+                <h3>Multi-cast Communication</h3>
+                <p>Integration with Layer 8's proximity-based routing for efficient distributed message passing.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section with Parallax Background -->
+    <section id="architecture" class="architecture-section parallax-section">
+        <div class="architecture-content">
+            <h2 style="font-size: 3rem; text-align: center; margin-bottom: 3rem;">System Architecture</h2>
+
+            <div class="architecture-diagram">
+                <pre>
+Layer 8 Web Services Architecture
+═════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────┐
+│                   Load Balancer                      │
+│              (Reverse Proxy with SSL)                │
+└─────────────┬───────────────────────┬───────────────┘
+              │                       │
+    ┌─────────▼──────────┐  ┌────────▼──────────┐
+    │   Web Server #1    │  │   Web Server #2    │
+    │  ┌──────────────┐  │  │  ┌──────────────┐  │
+    │  │ REST Handler │  │  │  │ REST Handler │  │
+    │  ├──────────────┤  │  │  ├──────────────┤  │
+    │  │   Plugins    │  │  │  │   Plugins    │  │
+    │  ├──────────────┤  │  │  ├──────────────┤  │
+    │  │ Layer 8 Core │  │  │  │ Layer 8 Core │  │
+    │  └──────────────┘  │  │  └──────────────┘  │
+    └────────────────────┘  └────────────────────┘
+              │                       │
+    ┌─────────▼───────────────────────▼───────────┐
+    │          Layer 8 Network Overlay             │
+    │     (Service Discovery & Message Routing)    │
+    └──────────────────────────────────────────────┘
+              │                       │
+    ┌─────────▼──────────┐  ┌────────▼──────────┐
+    │  Microservice #1   │  │  Microservice #2   │
+    └────────────────────┘  └────────────────────┘
+
+Key Components:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Reverse Proxy: Multi-domain SSL termination & routing
+• Web Servers: RESTful API with Protocol Buffers
+• Layer 8 Core: Distributed systems integration
+• Plugin System: Dynamic service loading
+• Network Overlay: Proximity-based message routing
+                </pre>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <h3 style="margin-bottom: 1rem;">🚀 High Performance</h3>
+                    <p>Optimized for low latency with connection pooling, efficient serialization, and intelligent caching strategies.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <h3 style="margin-bottom: 1rem;">🔐 Enterprise Security</h3>
+                    <p>Multiple authentication layers, certificate pinning, and encrypted communication channels throughout.</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <h3 style="margin-bottom: 1rem;">📊 Scalability</h3>
+                    <p>Horizontal scaling with automatic load balancing and service discovery for seamless expansion.</p>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section id="architecture" class="section">
-            <div class="container">
-                <h2>Architecture</h2>
-                <div class="architecture-diagram">
-                    <pre>
-go/
-├── web/
-│   ├── server/          # Web server implementation
-│   │   ├── RestServer.go       # Main REST server
-│   │   ├── ServiceHandler.go   # HTTP request handler
-│   │   ├── WebService.go       # Service registration
-│   │   └── LoadWebUI.go        # Web UI loader
-│   └── client/          # Web client implementation
-│       └── RestClient.go       # REST client implementation
-└── tests/              # Test files and test plugins
-                    </pre>
-                </div>
-                <p style="text-align: center; margin-top: 2rem;">
-                    The project follows a modular architecture with clear separation between server and client components,
-                    designed for seamless integration with the Layer 8 distributed systems framework.
-                </p>
-            </div>
-        </section>
+    <!-- Usage Examples Section -->
+    <section id="usage" class="parallax-section" style="background: #f8f9fa; min-height: auto; padding: 5rem 2rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 style="text-align: center; font-size: 3rem; margin-bottom: 3rem; background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                Quick Start Examples
+            </h2>
 
-        <section id="usage" class="section">
-            <div class="container">
-                <h2>Usage Examples</h2>
-                <div class="tabs">
-                    <div class="tab active" onclick="showTab('server')">Web Server</div>
-                    <div class="tab" onclick="showTab('client')">Web Client</div>
-                    <div class="tab" onclick="showTab('service')">Service Registration</div>
+            <div class="code-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="showTab('server')">Web Server</button>
+                    <button class="tab-button" onclick="showTab('proxy')">Reverse Proxy</button>
+                    <button class="tab-button" onclick="showTab('client')">Web Client</button>
+                    <button class="tab-button" onclick="showTab('service')">Service Registration</button>
                 </div>
-                
+
                 <div id="server" class="tab-content active">
-                    <h3>Creating a Web Server</h3>
+                    <h3 style="margin-bottom: 1rem;">Creating a Web Server</h3>
                     <div class="code-block">
 import (
     "github.com/saichler/l8web/go/web/server"
 )
 
-// Configure the server
+// Configure the server with enhanced features
 config := &server.RestServerConfig{
     Host:           "localhost",
     Port:           8080,
-    Authentication: false,
-    CertName:       "server",  // For HTTPS
-    Prefix:         "/api/",
+    Authentication: true,        // Enable auth
+    CertName:       "server",    // Auto-generate SSL cert
+    Prefix:         "/api/v1/",
+    DevMode:        true,        // Enable hot-reload
 }
 
 // Create and start the server
@@ -367,143 +732,266 @@ if err != nil {
     log.Fatal(err)
 }
 
+// Register middleware
+srv.Use(LoggingMiddleware)
+srv.Use(RateLimitMiddleware)
+
 // Start the server
 go srv.Start()
                     </div>
                 </div>
 
+                <div id="proxy" class="tab-content">
+                    <h3 style="margin-bottom: 1rem;">Setting up Reverse Proxy</h3>
+                    <div class="code-block">
+import (
+    "github.com/saichler/l8web/go/web/proxy"
+)
+
+// Configure multi-domain proxy
+proxyConfig := &proxy.Config{
+    Domains: map[string]proxy.DomainConfig{
+        "api.example.com": {
+            Backend: "http://localhost:8080",
+            SSL:     true,
+            Cache:   true,
+        },
+        "app.example.com": {
+            Backend: "http://localhost:3000",
+            SSL:     true,
+            WSSupport: true,  // WebSocket support
+        },
+    },
+    LoadBalancing: proxy.RoundRobin,
+    HealthCheck:   true,
+}
+
+// Create and start proxy
+proxy, err := proxy.NewProxy(proxyConfig)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Start proxy server
+proxy.ListenAndServe(":443")
+                    </div>
+                </div>
+
                 <div id="client" class="tab-content">
-                    <h3>Creating a Web Client</h3>
+                    <h3 style="margin-bottom: 1rem;">Creating a Web Client</h3>
                     <div class="code-block">
 import (
     "github.com/saichler/l8web/go/web/client"
 )
 
-// Configure the client
+// Configure the client with advanced features
 config := &client.RestClientConfig{
-    Host:          "localhost",
-    Port:          8080,
+    Host:          "api.example.com",
+    Port:          443,
     Https:         true,
     CertFileName:  "ca.crt",
-    TokenRequired: false,
-    Prefix:        "/api/",
+    TokenRequired: true,
+    Token:         "Bearer " + getAuthToken(),
+    Prefix:        "/api/v1/",
+    Timeout:       30 * time.Second,
+    MaxRetries:    3,
 }
 
-// Create the client
+// Create the client with connection pooling
 restClient, err := client.NewRestClient(config, resources)
 if err != nil {
     log.Fatal(err)
 }
 
-// Make requests
-response, err := restClient.GET("/endpoint", "ResponseType", "", "", nil)
+// Add request interceptor
+restClient.AddInterceptor(func(req *http.Request) {
+    req.Header.Set("X-Request-ID", generateRequestID())
+})
+
+// Make requests with automatic retry
+response, err := restClient.GET("/users", User{}, "", "", nil)
                     </div>
                 </div>
 
                 <div id="service" class="tab-content">
-                    <h3>Service Registration</h3>
+                    <h3 style="margin-bottom: 1rem;">Service Registration & Discovery</h3>
                     <div class="code-block">
 // Register a web service handler
-webNic.Resources().Services().RegisterServiceHandlerType(&server.WebService{})
+webNic.Resources().Services().RegisterServiceHandlerType(
+    &server.WebService{
+        Name:        "UserService",
+        Version:     "1.0.0",
+        Endpoints:   []string{"/users", "/auth"},
+        HealthCheck: "/health",
+    },
+)
 
-// Activate the web service
-_, err = webNic.Resources().Services().Activate(
-    server.ServiceTypeName, 
+// Activate the web service with auto-discovery
+service, err := webNic.Resources().Services().Activate(
+    server.ServiceTypeName,
     ifs.WebService,
-    0, 
-    webNic.Resources(), 
-    webNic, 
+    0,  // Auto-assign port
+    webNic.Resources(),
+    webNic,
     srv,
 )
+
+// Service is now discoverable via Layer 8
+log.Printf("Service registered: %s at %s",
+    service.Name(), service.Endpoint())
+
+// Discover other services
+services := webNic.DiscoverServices("UserService")
+for _, svc := range services {
+    log.Printf("Found service: %s", svc.Endpoint())
+}
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <section id="docs" class="section">
-            <div class="container">
-                <h2>Getting Started</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                    <div class="feature-card">
-                        <h3>📦 Installation</h3>
-                        <div class="code-block" style="text-align: left;">
+    <!-- Documentation Section -->
+    <section id="docs" class="parallax-section" style="background: white; min-height: auto; padding: 5rem 2rem;">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <h2 style="text-align: center; font-size: 3rem; margin-bottom: 3rem;">Getting Started</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+                <div class="feature-card">
+                    <h3>📦 Installation</h3>
+                    <div class="code-block" style="margin-top: 1rem;">
 go get github.com/saichler/l8web/go
-                        </div>
+
+# With all dependencies
+go mod download
                     </div>
-                    <div class="feature-card">
-                        <h3>🧪 Testing</h3>
-                        <div class="code-block" style="text-align: left;">
-# Run tests with coverage
+                </div>
+
+                <div class="feature-card">
+                    <h3>🧪 Testing</h3>
+                    <div class="code-block" style="margin-top: 1rem;">
+# Run full test suite
 ./test.sh
-                        </div>
+
+# Run with coverage
+go test -coverprofile=cover.out ./...
+go tool cover -html=cover.out
                     </div>
-                    <div class="feature-card">
-                        <h3>📋 Requirements</h3>
-                        <ul style="text-align: left; margin-top: 1rem;">
-                            <li>Go 1.23.8+</li>
-                            <li>Layer 8 Framework</li>
-                            <li>Protocol Buffers</li>
-                            <li>Google UUID</li>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🚀 Quick Deploy</h3>
+                    <div class="code-block" style="margin-top: 1rem;">
+# Build the server
+go build -o l8web cmd/server/main.go
+
+# Run with config
+./l8web --config server.yaml
+
+# Docker deployment
+docker build -t l8web .
+docker run -p 8080:8080 l8web
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📋 Requirements</h3>
+                    <ul style="margin-top: 1rem; padding-left: 1.5rem;">
+                        <li>Go 1.23.8 or higher</li>
+                        <li>Layer 8 Framework Core</li>
+                        <li>Protocol Buffers 3.0+</li>
+                        <li>Docker (optional)</li>
+                        <li>SSL certificates (auto-generated if not provided)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🔧 Configuration</h3>
+                    <div class="code-block" style="margin-top: 1rem;">
+# server.yaml
+server:
+  host: 0.0.0.0
+  port: 8080
+  ssl:
+    enabled: true
+    cert: server.crt
+    key: server.key
+  auth:
+    enabled: true
+    token_expiry: 24h
+  layer8:
+    discovery: true
+    multicast: true
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📚 Documentation</h3>
+                    <div style="margin-top: 1rem;">
+                        <p>Full documentation available at:</p>
+                        <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                            <li><a href="https://github.com/saichler/l8web/wiki" style="color: var(--primary-color);">Project Wiki</a></li>
+                            <li><a href="https://github.com/saichler/l8web/tree/main/docs" style="color: var(--primary-color);">API Reference</a></li>
+                            <li><a href="https://github.com/saichler/layer8" style="color: var(--primary-color);">Layer 8 Core Docs</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <section class="section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <div class="container" style="text-align: center;">
-                <h2>Security Features</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 2rem;">
-                    <div>
-                        <h4>🛡️ TLS/HTTPS Support</h4>
-                        <p>Full SSL/TLS encryption for secure communications</p>
-                    </div>
-                    <div>
-                        <h4>📜 Certificate Management</h4>
-                        <p>Automatic certificate generation and validation</p>
-                    </div>
-                    <div>
-                        <h4>🔐 Token Authentication</h4>
-                        <p>Bearer token authentication system</p>
-                    </div>
-                    <div>
-                        <h4>🏛️ Custom CA Support</h4>
-                        <p>Support for custom certificate authorities</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <div class="footer-links">
-                <a href="https://github.com/saichler/l8web">GitHub</a>
-                <a href="#docs">Documentation</a>
-                <a href="#architecture">Architecture</a>
-                <a href="#usage">Examples</a>
-            </div>
-            <p>&copy; 2024 l8web - Licensed under the Apache License, Version 2.0</p>
-            <p>Part of the Layer 8 Framework Ecosystem</p>
         </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section">
+        <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Ready to Build Distributed Web Services?</h2>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.95;">
+            Join the Layer 8 ecosystem and leverage advanced web infrastructure for your distributed systems
+        </p>
+        <a href="https://github.com/saichler/l8web" class="cta-button">Get Started on GitHub</a>
+        <a href="#docs" class="cta-button secondary">Read Documentation</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/saichler/l8web">GitHub</a>
+            <a href="https://github.com/saichler/l8web/issues">Issues</a>
+            <a href="https://github.com/saichler/layer8">Layer 8 Framework</a>
+            <a href="#docs">Documentation</a>
+            <a href="#architecture">Architecture</a>
+        </div>
+        <p style="margin-bottom: 0.5rem;">© 2024 Layer 8 Web Services - Licensed under the Apache License, Version 2.0</p>
+        <p style="opacity: 0.8;">Part of the Layer 8 Framework Ecosystem</p>
     </footer>
 
     <script>
+        // Tab switching functionality
         function showTab(tabName) {
             // Hide all tab contents
-            const contents = document.querySelectorAll('.tab-content');
-            contents.forEach(content => content.classList.remove('active'));
-            
-            // Remove active class from all tabs
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            
-            // Show selected tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to clicked tab
+
+            // Add active class to clicked button
             event.target.classList.add('active');
         }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
 
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -519,14 +1007,40 @@ go get github.com/saichler/l8web/go
             });
         });
 
-        // Add scroll effect to header
+        // Parallax scrolling effect
         window.addEventListener('scroll', () => {
-            const header = document.querySelector('header');
-            if (window.scrollY > 100) {
-                header.style.background = 'rgba(255, 255, 255, 0.98)';
-            } else {
-                header.style.background = 'rgba(255, 255, 255, 0.95)';
-            }
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('.parallax-bg');
+
+            parallaxElements.forEach(element => {
+                const speed = 0.5;
+                element.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+
+            // Floating elements parallax
+            document.querySelectorAll('.illustration-float').forEach((element, index) => {
+                const speed = 0.3 * (index + 1);
+                element.style.transform = `translateY(${-scrolled * speed * 0.1}px) rotate(${scrolled * 0.02}deg)`;
+            });
+        });
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                }
+            });
+        }, observerOptions);
+
+        // Observe feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
         });
     </script>
 </body>

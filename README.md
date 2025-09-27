@@ -1,43 +1,63 @@
-# l8web
+# Layer 8 Web Services
 
-Web Server & Client for the Layer 8 Framework
+Advanced Web Server, Client & Reverse Proxy for the Layer 8 Framework
 
 ## Overview
 
-**l8web** is a Go-based web server and client library designed specifically for the Layer 8 distributed systems framework. It provides RESTful HTTP endpoints that seamlessly integrate with the Layer 8 network overlay, enabling web-based access to distributed services.
+**Layer 8 Web Services** (l8web) is a comprehensive Go-based web infrastructure library designed specifically for the Layer 8 distributed systems framework. It provides RESTful HTTP endpoints, reverse proxy capabilities, and client libraries that seamlessly integrate with the Layer 8 network overlay, enabling secure web-based access to distributed services.
 
 ## Features
 
 ### Web Server
 - **RESTful API Server**: Full HTTP REST server supporting GET, POST, PUT, PATCH, and DELETE methods
 - **Protocol Buffers Integration**: Native support for Protocol Buffers serialization/deserialization
-- **TLS/HTTPS Support**: Built-in SSL/TLS support with certificate management
+- **TLS/HTTPS Support**: Built-in SSL/TLS support with automatic certificate generation and management
+- **Authentication System**: Enhanced bearer token authentication with configurable auth paths
 - **Service Discovery**: Automatic registration and discovery of web services
-- **Plugin System**: Dynamic loading of service plugins
+- **Plugin System**: Dynamic loading of service plugins with hot-reload capability
 - **Multi-cast Communication**: Integration with Layer 8's proximity-based routing
+- **Development Mode**: Built-in development server with hot-reload and debug features
+
+### Reverse Proxy (New)
+- **Multi-Domain Support**: Handle multiple domains with per-domain configuration
+- **SSL Termination**: Automatic SSL certificate management for proxied domains
+- **Load Balancing**: Distribute requests across multiple backend servers
+- **Header Manipulation**: Add, modify, or remove headers in transit
+- **Path Rewriting**: Flexible URL path transformation rules
+- **WebSocket Support**: Full WebSocket protocol proxying
+- **Caching Layer**: Optional response caching for improved performance
 
 ### Web Client
 - **HTTP/HTTPS Client**: Full-featured REST client with timeout handling and retry logic
-- **Authentication**: Bearer token authentication support
-- **Certificate Management**: Custom CA certificate support for secure connections
-- **Compression**: GZIP compression support
+- **Authentication**: Enhanced bearer token authentication with automatic token refresh
+- **Certificate Management**: Custom CA certificate support with certificate pinning
+- **Compression**: GZIP compression support with automatic content negotiation
 - **Configurable Endpoints**: Flexible URL construction and endpoint management
+- **Connection Pooling**: Efficient connection reuse for improved performance
+- **Request/Response Interceptors**: Middleware support for request/response modification
 
 ## Architecture
 
-The project follows a modular architecture with clear separation between server and client components:
+The project follows a modular architecture with clear separation between server, proxy, and client components:
 
 ```
 go/
 ├── web/
 │   ├── server/          # Web server implementation
-│   │   ├── RestServer.go       # Main REST server
+│   │   ├── RestServer.go       # Main REST server with enhanced auth
 │   │   ├── ServiceHandler.go   # HTTP request handler
 │   │   ├── WebService.go       # Service registration
 │   │   └── LoadWebUI.go        # Web UI loader
+│   ├── proxy/           # Reverse proxy implementation (New)
+│   │   ├── Proxy.go            # Core proxy server
+│   │   ├── ProxyConfig.go      # Configuration management
+│   │   └── domains/            # Per-domain configurations
 │   └── client/          # Web client implementation
-│       └── RestClient.go       # REST client implementation
-└── tests/              # Test files and test plugins
+│       └── RestClient.go       # Enhanced REST client
+└── tests/              # Comprehensive test suite
+    ├── integration/    # Integration tests
+    ├── benchmarks/     # Performance benchmarks
+    └── plugins/        # Test plugins
 ```
 
 ## Dependencies
