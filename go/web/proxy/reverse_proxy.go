@@ -46,7 +46,7 @@ func NewReverseProxy() *ProxyConfig {
 func (pc *ProxyConfig) Start() error {
 	mux := http.NewServeMux()
 
-	hostname := os.Getenv("HOSTNAME")
+	hostname := os.Getenv("NODE_IP")
 	if hostname == "" {
 		hostname = "localhost"
 	}
@@ -89,7 +89,7 @@ func (pc *ProxyConfig) Start() error {
 		for _, route := range pc.Routes {
 			for _, domain := range route.Domains {
 				if host == domain || host == domain+":443" {
-					hostname := os.Getenv("HOSTNAME")
+					hostname := os.Getenv("NODE_IP")
 					if hostname == "" {
 						hostname = "localhost"
 					}
