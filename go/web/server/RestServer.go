@@ -19,8 +19,7 @@ import (
 var endPoints = maps.NewSyncMap()
 
 type RestServer struct {
-	webServer    *http.Server
-	webServerDev *http.Server
+	webServer *http.Server
 	RestServerConfig
 }
 
@@ -45,13 +44,7 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs.LoadWebUI()
 
 	if rs.CertName != "" {
-		//For development
 		_, err := os.Open(rs.CertName + ".crt")
-		if err != nil {
-			fmt.Println("Error loading dev certificate:", err)
-			certs.CreateLayer8Crt(rs.CertName+"-dev", protocol.MachineIP, int64(rs.Port+2000))
-		}
-		_, err = os.Open(rs.CertName + ".crt")
 		if err != nil {
 			fmt.Println("Error loading certificate:", err)
 			certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
@@ -100,19 +93,8 @@ func (this *RestServer) Start() error {
 		Addr:    this.Host + ":" + strconv.Itoa(this.Port),
 		Handler: http.DefaultServeMux,
 	}
-	this.webServerDev = &http.Server{
-		Addr:    this.Host + ":" + strconv.Itoa(this.Port+2000),
-		Handler: http.DefaultServeMux,
-	}
 
 	if this.CertName != "" {
-		//For development
-		go func() {
-			err = this.webServerDev.ListenAndServeTLS(this.CertName+"-dev.crt", this.CertName+"-dev.crtKey")
-			if err != nil {
-				fmt.Println("Error starting dev web server ", err)
-			}
-		}()
 		err = this.webServer.ListenAndServeTLS(this.CertName+".crt", this.CertName+".crtKey")
 		if err != nil && !strings.Contains(err.Error(), "Server closed") {
 			fmt.Println("Error starting web server ", err)
