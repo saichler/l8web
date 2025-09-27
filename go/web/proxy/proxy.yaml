@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: l8proxy
+  labels:
+    name: l8proxy
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: l8proxy
+  name: l8proxy
+  labels:
+    app: l8proxy
+spec:
+  selector:
+    matchLabels:
+      app: l8proxy
+  template:
+    metadata:
+      labels:
+        app: l8proxy
+    spec:
+      hostNetwork: true
+      containers:
+        - name: l8proxy
+          image: saichler/proxy:latest
+          imagePullPolicy: Always
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          volumeMounts:
+            - name: hdata
+              mountPath: /data
+      volumes:
+        - name: hdata
+          hostPath:
+            path: /data
+            type: DirectoryOrCreate

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -45,8 +46,13 @@ func NewReverseProxy() *ProxyConfig {
 func (pc *ProxyConfig) Start() error {
 	mux := http.NewServeMux()
 
+	hostname := os.Getenv("HOSTNAME")
+	if hostname == "" {
+		hostname = "localhost"
+	}
+
 	for _, route := range pc.Routes {
-		targetURL, err := url.Parse(fmt.Sprintf("https://localhost:%s", route.TargetPort))
+		targetURL, err := url.Parse(fmt.Sprintf("https://%s:%s", hostname, route.TargetPort))
 		if err != nil {
 			return fmt.Errorf("failed to parse target URL for port %s: %v", route.TargetPort, err)
 		}
@@ -83,7 +89,11 @@ func (pc *ProxyConfig) Start() error {
 		for _, route := range pc.Routes {
 			for _, domain := range route.Domains {
 				if host == domain || host == domain+":443" {
-					targetURL, _ := url.Parse(fmt.Sprintf("https://localhost:%s", route.TargetPort))
+					hostname := os.Getenv("HOSTNAME")
+					if hostname == "" {
+						hostname = "localhost"
+					}
+					targetURL, _ := url.Parse(fmt.Sprintf("https://%s:%s", hostname, route.TargetPort))
 					proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
 					originalDirector := proxy.Director
@@ -99,7 +109,7 @@ func (pc *ProxyConfig) Start() error {
 						},
 					}
 
-					log.Printf("Proxying request from %s to localhost:%s", host, route.TargetPort)
+					log.Printf("Proxying request from %s to %s:%s", host, hostname, route.TargetPort)
 					proxy.ServeHTTP(w, r)
 					return
 				}
