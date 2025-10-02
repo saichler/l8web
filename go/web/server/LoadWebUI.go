@@ -20,21 +20,24 @@ var (
 
 func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
-	
+
 	// Clear and reload web UI file mappings (but keep handler registry intact)
 	webUIFileMapMutex.Lock()
 	webUIFileMap = make(map[string]string)
 	webUIFileMapMutex.Unlock()
-	
+
 	// DO NOT clear handler registry - handlers remain registered in ServeMux
-	
+
 	// Determine the web directory path
 	webDir := this.getWebDirectory()
-	
-	// Scan and register all web files
+
+	// Scan and register all web files (non-root index.html files get handlers here)
 	this.loadWebDir("/", webDir)
-	
-	// Register smart root handler (only once) that can distinguish between index.html and 404s
+
+	// Register all .html files (except root index.html) before the root handler
+	this.registerHTMLHandlers()
+
+	// Register smart root handler LAST (only once) so specific paths are matched first
 	if !rootHandlerRegistered {
 		http.HandleFunc("/", this.smartRootHandler)
 		rootHandlerRegistered = true
@@ -67,7 +70,7 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 		fmt.Println("Error loading web UI:", err)
 		return
 	}
-	
+
 	for _, file := range files {
 		webPath := concat(path, file.Name())
 		if file.IsDir() {
@@ -84,14 +87,14 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 				webUIFileMapMutex.Lock()
 				webUIFileMap[indexPath] = fullFilePath
 				webUIFileMapMutex.Unlock()
-				
+
 				// Don't register handlers for index.html files - let smartRootHandler handle them
 				// Only register specific handlers for non-root index.html files
 				if indexPath != "/" {
 					webUIHandlerRegistryMutex.RLock()
 					_, exists := webUIHandlerRegistry[indexPath]
 					webUIHandlerRegistryMutex.RUnlock()
-					
+
 					if !exists {
 						handler := this.createDynamicHandler(indexPath)
 						webUIHandlerRegistryMutex.Lock()
@@ -106,19 +109,45 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 				webUIFileMapMutex.Lock()
 				webUIFileMap[webPath] = fullFilePath
 				webUIFileMapMutex.Unlock()
-				
-				// Check if handler is already registered
-				webUIHandlerRegistryMutex.RLock()
-				_, exists := webUIHandlerRegistry[webPath]
-				webUIHandlerRegistryMutex.RUnlock()
-				
-				if !exists {
-					handler := this.createDynamicHandler(webPath)
-					webUIHandlerRegistryMutex.Lock()
-					webUIHandlerRegistry[webPath] = handler
-					webUIHandlerRegistryMutex.Unlock()
-					http.HandleFunc(webPath, handler)
+
+				// Register handlers for all non-HTML files immediately
+				// HTML files (except index.html) will be registered in registerHTMLHandlers
+				if !strings.HasSuffix(webPath, ".html") {
+					webUIHandlerRegistryMutex.RLock()
+					_, exists := webUIHandlerRegistry[webPath]
+					webUIHandlerRegistryMutex.RUnlock()
+
+					if !exists {
+						handler := this.createDynamicHandler(webPath)
+						webUIHandlerRegistryMutex.Lock()
+						webUIHandlerRegistry[webPath] = handler
+						webUIHandlerRegistryMutex.Unlock()
+						http.HandleFunc(webPath, handler)
+					}
 				}
+			}
+		}
+	}
+}
+
+func (this *RestServer) registerHTMLHandlers() {
+	webUIFileMapMutex.RLock()
+	defer webUIFileMapMutex.RUnlock()
+
+	for webPath := range webUIFileMap {
+		// Only register handlers for .html files (excluding index.html paths)
+		if strings.HasSuffix(webPath, ".html") && !strings.HasSuffix(webPath, "/") {
+			webUIHandlerRegistryMutex.RLock()
+			_, exists := webUIHandlerRegistry[webPath]
+			webUIHandlerRegistryMutex.RUnlock()
+
+			if !exists {
+				handler := this.createDynamicHandler(webPath)
+				webUIHandlerRegistryMutex.Lock()
+				webUIHandlerRegistry[webPath] = handler
+				webUIHandlerRegistryMutex.Unlock()
+				http.HandleFunc(webPath, handler)
+				fmt.Println("Registered HTML handler:", webPath)
 			}
 		}
 	}
