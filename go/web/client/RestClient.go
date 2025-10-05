@@ -45,6 +45,9 @@ type RestAuthInfo struct {
 	RespType   string
 	TokenField string
 	AuthPath   string
+	IsAPIKey   bool
+	ApiUser    string
+	ApiKey     string
 }
 
 func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestClient, error) {
@@ -139,6 +142,10 @@ func (rc *RestClient) request(method, end, vars string, pbBody proto.Message) (*
 	request.Header.Add("content-type", "application/json")
 	request.Header.Add("Accept", "application/json, text/plain, */*")
 	request.Header.Add("Access-Control-Allow-Origin", "*")
+	if rc.AuthInfo.IsAPIKey {
+		request.Header.Add("X-USER-ID", rc.AuthInfo.ApiUser)
+		request.Header.Add("X-API-KEY", rc.AuthInfo.ApiKey)
+	}
 	return request, nil
 }
 
