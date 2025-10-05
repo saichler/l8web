@@ -75,6 +75,9 @@ func createRestClient(t *testing.T, pb interface{}) (*client.RestClient, bool) {
 
 func createRestClient2(t *testing.T, pb interface{}, prefix string) (*client.RestClient, bool) {
 	resources, _ := CreateResources(VNET_PORT, 3, ifs.Info_Level)
+	resources.Registry().Register(&l8web.L8Empty{})
+	resources.Registry().Register(&l8api.AuthToken{})
+	resources.Registry().Register(&l8api.AuthUser{})
 	clientConfig := &client.RestClientConfig{
 		Host:          protocol.MachineIP,
 		Port:          8080,
@@ -82,8 +85,17 @@ func createRestClient2(t *testing.T, pb interface{}, prefix string) (*client.Res
 		TokenRequired: true,
 		CertFileName:  "test.crt",
 		Prefix:        prefix,
-		AuthPaths:     []string{"auth"},
+		AuthInfo: &client.RestAuthInfo{
+			NeedAuth:   true,
+			BodyType:   "AuthUser",
+			UserField:  "User",
+			PassField:  "Pass",
+			RespType:   "AuthToken",
+			TokenField: "Token",
+			AuthPath:   "/auth",
+		},
 	}
+
 	resources.Registry().Register(&l8api.AuthToken{})
 	restClient, err := client.NewRestClient(clientConfig, resources)
 	if err != nil {

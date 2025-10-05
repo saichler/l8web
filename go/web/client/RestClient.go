@@ -10,12 +10,12 @@ import (
 	"io"
 	nethttp "net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8types/go/types/l8api"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -34,7 +34,17 @@ type RestClientConfig struct {
 	TokenRequired bool
 	Token         string
 	CertFileName  string
-	AuthPaths     []string
+	AuthInfo      *RestAuthInfo
+}
+
+type RestAuthInfo struct {
+	NeedAuth   bool
+	BodyType   string
+	UserField  string
+	PassField  string
+	RespType   string
+	TokenField string
+	AuthPath   string
 }
 
 func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestClient, error) {
@@ -42,7 +52,7 @@ func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestCli
 	rc.CertFileName = config.CertFileName
 	rc.Host = config.Host
 	rc.Https = config.Https
-	rc.AuthPaths = config.AuthPaths
+	rc.AuthInfo = config.AuthInfo
 	rc.Prefix = config.Prefix
 	rc.Port = config.Port
 	rc.TokenRequired = config.TokenRequired
@@ -133,13 +143,11 @@ func (rc *RestClient) request(method, end, vars string, pbBody proto.Message) (*
 }
 
 func (rc *RestClient) isAuthPath(end string) bool {
-	if rc.AuthPaths == nil {
+	if rc.AuthInfo == nil {
 		return false
 	}
-	for _, ap := range rc.AuthPaths {
-		if strings.Contains(end, ap) {
-			return true
-		}
+	if strings.HasSuffix(rc.AuthInfo.AuthPath, end) {
+		return true
 	}
 	return false
 }
@@ -167,12 +175,40 @@ func isTimeout(err error) bool {
 }
 
 func (rc *RestClient) Auth(user, pass string) error {
-	creds := &l8api.AuthUser{User: user, Pass: pass}
-	token, err := rc.Do("POST", "/auth", "AuthToken", "", "", creds, 5)
+	if rc.AuthInfo == nil || !rc.AuthInfo.NeedAuth {
+		return nil
+	}
+
+	info, err := rc.resources.Registry().Info(rc.AuthInfo.BodyType)
 	if err != nil {
 		return err
 	}
-	rc.Token = token.(*l8api.AuthToken).Token
+
+	creds, _ := info.NewInstance()
+	credsVal := reflect.ValueOf(creds).Elem()
+	if !credsVal.FieldByName(rc.AuthInfo.UserField).CanSet() || !credsVal.FieldByName(rc.AuthInfo.PassField).CanSet() {
+		return errors.New("invalid credential field names")
+	}
+
+	credsVal.FieldByName(rc.AuthInfo.UserField).Set(reflect.ValueOf(user))
+	credsVal.FieldByName(rc.AuthInfo.PassField).Set(reflect.ValueOf(pass))
+
+	token, err := rc.Do("POST", rc.AuthInfo.AuthPath, rc.AuthInfo.RespType, "", "", creds.(proto.Message), 5)
+	if err != nil {
+		return err
+	}
+
+	tokenVal := reflect.ValueOf(token).Elem()
+	if !tokenVal.FieldByName(rc.AuthInfo.TokenField).CanSet() {
+		return errors.New("invalid token field name")
+	}
+
+	t, ok := tokenVal.FieldByName(rc.AuthInfo.TokenField).Interface().(string)
+	if !ok {
+		return errors.New("invalid token field value, should be string")
+	}
+
+	rc.Token = t
 	return nil
 }
 
