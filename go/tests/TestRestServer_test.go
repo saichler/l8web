@@ -68,6 +68,8 @@ func TestRestServer(t *testing.T) {
 
 	server.Target = serviceNic.Resources().SysConfig().LocalUuid
 
+	time.Sleep(time.Second)
+
 	resp, err := restClient.POST("0/Tests", "TestProtoList", "", "", pb.(proto.Message))
 	if err != nil {
 		Log.Fail(t, err)

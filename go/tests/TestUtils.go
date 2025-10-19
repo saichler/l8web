@@ -43,9 +43,9 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 		Log.Fail(t, err)
 		return nil, srv, false
 	}
-	webNic.Resources().Services().RegisterServiceHandlerType(&server.WebService{})
-	_, err = webNic.Resources().Services().Activate(server.ServiceTypeName, ifs.WebService,
-		0, webNic.Resources(), webNic, srv)
+	sla := ifs.NewServiceLevelAgreement(&server.WebService{}, ifs.WebService, 0, false, nil)
+	sla.SetArgs(srv)
+	_, err = webNic.Resources().Services().Activate(sla, webNic)
 	if err != nil {
 		Log.Fail(t, err.Error())
 		return nil, srv, false

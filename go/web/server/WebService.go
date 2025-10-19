@@ -25,19 +25,15 @@ type WebService struct {
 	resources ifs.IResources
 }
 
-func (this *WebService) Activate(serviceName string, serviceArea byte,
-	resources ifs.IResources, listener ifs.IServiceCacheListener, args ...interface{}) error {
-	this.resources = resources
-	resources.Registry().Register(&l8web.L8WebService{})
-	this.server = args[0].(ifs.IWebServer)
-	vnic, ok := listener.(ifs.IVNic)
-	if ok {
-		go func() {
-			time.Sleep(time.Second * 2)
-			vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
-			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
-		}()
-	}
+func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
+	this.resources = vnic.Resources()
+	this.resources.Registry().Register(&l8web.L8WebService{})
+	this.server = sla.Args()[0].(ifs.IWebServer)
+	go func() {
+		time.Sleep(time.Second * 2)
+		vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
+		vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
+	}()
 	http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 	return nil
 }
