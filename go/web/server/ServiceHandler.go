@@ -10,6 +10,7 @@ import (
 
 	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8api"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -129,20 +130,21 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
 	var resp ifs.IElements
 	if this.serviceName == health.ServiceName {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
-		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout)
+		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout)
 	} else {
 		if Target != "" {
-			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
+			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
 		} else {
 			if Method == ifs.M_Leader {
-				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
+				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
 			} else if Method == ifs.M_Local {
-				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
+				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
 			} else {
-				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method), body, Timeout, aaaid)
+				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
 			}
 		}
 	}
@@ -195,17 +197,37 @@ func (this *ServiceHandler) newResp(method string) (proto.Message, error) {
 	return reflect.New(reflect.ValueOf(pb).Elem().Type()).Interface().(proto.Message), nil
 }
 
-func methodToAction(method string) ifs.Action {
+func methodToAction(method string, body proto.Message) ifs.Action {
+	isMapReduce := false
+	q, ok := body.(*l8api.L8Query)
+	if ok {
+		isMapReduce = q.MapReduce
+	}
 	switch method {
 	case http.MethodPost:
+		if isMapReduce {
+			return ifs.MapR_POST
+		}
 		return ifs.POST
 	case http.MethodGet:
+		if isMapReduce {
+			return ifs.MapR_GET
+		}
 		return ifs.GET
 	case http.MethodDelete:
+		if isMapReduce {
+			return ifs.MapR_DELETE
+		}
 		return ifs.DELETE
 	case http.MethodPut:
+		if isMapReduce {
+			return ifs.MapR_PUT
+		}
 		return ifs.PUT
 	case http.MethodPatch:
+		if isMapReduce {
+			return ifs.MapR_PATCH
+		}
 		return ifs.PATCH
 	}
 	return ifs.GET

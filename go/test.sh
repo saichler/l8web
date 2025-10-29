@@ -12,6 +12,12 @@ go mod init
 GOPROXY=direct GOPRIVATE=github.com go mod tidy
 go mod vendor
 
+echo "******************************************************"
+echo "* Make sure you built security before running this tests"
+echo "* Shallow Security exist in https://github.com/saichler/l8utils/tree/main/go/utils/shallow_security/build.sh"
+echo "******************************************************"
+read -n 1 -s -r -p "Press any key to continue..."
+
 rm -rf ./tests/*.so
 
 cp ../../l8secure/go/secure/provider/loader.so ./tests/loader.so
