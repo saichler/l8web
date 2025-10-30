@@ -202,7 +202,7 @@ func methodToAction(method string, body proto.Message) ifs.Action {
 	q, ok := body.(*l8api.L8Query)
 	if ok {
 		if strings.Contains(strings.ToLower(q.Text), "mapreduce") {
-			isMapReduce = q.MapReduce
+			isMapReduce = true
 		}
 	}
 	switch method {
