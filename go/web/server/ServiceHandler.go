@@ -201,7 +201,9 @@ func methodToAction(method string, body proto.Message) ifs.Action {
 	isMapReduce := false
 	q, ok := body.(*l8api.L8Query)
 	if ok {
-		isMapReduce = q.MapReduce
+		if strings.Contains(strings.ToLower(q.Text), "mapreduce") {
+			isMapReduce = q.MapReduce
+		}
 	}
 	switch method {
 	case http.MethodPost:
