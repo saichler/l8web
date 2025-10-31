@@ -205,6 +205,7 @@ func methodToAction(method string, body proto.Message) ifs.Action {
 			isMapReduce = true
 		}
 	}
+	fmt.Println("Map Reduce=", isMapReduce)
 	switch method {
 	case http.MethodPost:
 		if isMapReduce {
