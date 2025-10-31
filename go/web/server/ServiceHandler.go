@@ -68,7 +68,6 @@ func (this *ServiceHandler) ServiceArea() byte {
 }
 
 func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Web Server invoked")
 	aaaid := ""
 	if this.authEnabled {
 		bearer := r.Header.Get("Authorization")
@@ -205,7 +204,6 @@ func methodToAction(method string, body proto.Message) ifs.Action {
 			isMapReduce = true
 		}
 	}
-	fmt.Println("Map Reduce=", isMapReduce)
 	switch method {
 	case http.MethodPost:
 		if isMapReduce {
