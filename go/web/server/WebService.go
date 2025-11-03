@@ -34,6 +34,7 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic1 ifs.IVNic
 		for i := 1; i < len(sla.Args()); i++ {
 			nic, ok := sla.Args()[i].(ifs.IVNic)
 			if ok {
+				fmt.Println("Registering Nic ", nic.Resources().SysConfig().VnetPort)
 				vnics = append(vnics, nic)
 				this.resources = append(this.resources, nic.Resources())
 				nic.Resources().Registry().Register(&l8web.L8WebService{})
@@ -46,7 +47,7 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic1 ifs.IVNic
 	go func() {
 		time.Sleep(time.Second * 2)
 		for _, vnic := range vnics {
-			vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
+			fmt.Println("Sending Get Multicast for EndPoints ", vnic.Resources().SysConfig().VnetPort)
 			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
 		}
 	}()
