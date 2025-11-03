@@ -22,17 +22,33 @@ const (
 
 type WebService struct {
 	server    ifs.IWebServer
-	resources ifs.IResources
+	resources []ifs.IResources
 }
 
-func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
-	this.resources = vnic.Resources()
-	this.resources.Registry().Register(&l8web.L8WebService{})
+func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic1 ifs.IVNic) error {
+	this.resources = make([]ifs.IResources, 0)
+	this.resources = append(this.resources, vnic1.Resources())
+	vnics := make([]ifs.IVNic, 0)
+	vnics = append(vnics, vnic1)
+	if len(sla.Args()) > 1 {
+		for i := 1; i < len(sla.Args()); i++ {
+			nic, ok := sla.Args()[i].(ifs.IVNic)
+			if ok {
+				vnics = append(vnics, nic)
+				this.resources = append(this.resources, nic.Resources())
+				nic.Resources().Registry().Register(&l8web.L8WebService{})
+			}
+		}
+	}
+	vnic1.Resources().Registry().Register(&l8web.L8WebService{})
+
 	this.server = sla.Args()[0].(ifs.IWebServer)
 	go func() {
 		time.Sleep(time.Second * 2)
-		vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
-		vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
+		for _, vnic := range vnics {
+			vnic.Resources().Logger().Info("Sending Get Multicast for EndPoints")
+			vnic.Multicast(health.ServiceName, 0, ifs.EndPoints, nil)
+		}
 	}()
 	http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 	return nil
@@ -56,7 +72,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read user/pass #2")
 		return
 	}
-	token, err := this.resources.Security().Authenticate(user.User, user.Pass)
+	token, err := this.resources[0].Security().Authenticate(user.User, user.Pass)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
