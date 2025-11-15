@@ -12,6 +12,10 @@ import (
 )
 
 type ProxyConfig struct {
+	Listeners []ListenerConfig
+}
+
+type ListenerConfig struct {
 	ListenPort string
 	Routes     []RouteConfig
 }
@@ -25,37 +29,61 @@ type RouteConfig struct {
 
 func NewReverseProxy() *ProxyConfig {
 	return &ProxyConfig{
-		ListenPort: ":443",
-		Routes: []RouteConfig{
+		Listeners: []ListenerConfig{
 			{
-				Domains:    []string{"www.layer8vibe.dev", "layer8vibe.dev"},
-				TargetPort: "1443",
-				CertFile:   "layer8vibe.dev/domain.cert.pem",
-				KeyFile:    "layer8vibe.dev/private.key.pem",
+				ListenPort: ":443",
+				Routes: []RouteConfig{
+					{
+						Domains:    []string{"www.layer8vibe.dev", "layer8vibe.dev"},
+						TargetPort: "1443",
+						CertFile:   "layer8vibe.dev/domain.cert.pem",
+						KeyFile:    "layer8vibe.dev/private.key.pem",
+					},
+					{
+						Domains:    []string{"www.probler.dev", "probler.dev"},
+						TargetPort: "2443",
+						CertFile:   "probler.dev/domain.cert.pem",
+						KeyFile:    "probler.dev/private.key.pem",
+					},
+					{
+						Domains:    []string{"www.layer-8.dev", "layer-8.dev"},
+						TargetPort: "4443",
+						CertFile:   "layer-8.dev/domain.cert.pem",
+						KeyFile:    "layer-8.dev/private.key.pem",
+					},
+				},
 			},
 			{
-				Domains:    []string{"www.probler.dev", "probler.dev"},
-				TargetPort: "2443",
-				CertFile:   "probler.dev/domain.cert.pem",
-				KeyFile:    "probler.dev/private.key.pem",
-			},
-			{
-				Domains:    []string{"www.probler.dev:13443", "probler.dev:13443"},
-				TargetPort: "13443",
-				CertFile:   "probler.dev/domain.cert.pem",
-				KeyFile:    "probler.dev/private.key.pem",
-			},
-			{
-				Domains:    []string{"www.layer-8.dev", "layer-8.dev"},
-				TargetPort: "4443",
-				CertFile:   "layer-8.dev/domain.cert.pem",
-				KeyFile:    "layer-8.dev/private.key.pem",
+				ListenPort: ":13443",
+				Routes: []RouteConfig{
+					{
+						Domains:    []string{"www.probler.dev", "probler.dev"},
+						TargetPort: "13443",
+						CertFile:   "probler.dev/domain.cert.pem",
+						KeyFile:    "probler.dev/private.key.pem",
+					},
+				},
 			},
 		},
 	}
 }
 
 func (pc *ProxyConfig) Start() error {
+	errChan := make(chan error, len(pc.Listeners))
+
+	for _, listener := range pc.Listeners {
+		go func(listener ListenerConfig) {
+			if err := pc.startListener(listener); err != nil {
+				errChan <- err
+			}
+		}(listener)
+	}
+
+	// Wait for first error from any listener
+	return <-errChan
+}
+
+func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 	mux := http.NewServeMux()
 
 	hostname := os.Getenv("NODE_IP")
@@ -63,7 +91,7 @@ func (pc *ProxyConfig) Start() error {
 		hostname = "localhost"
 	}
 
-	for _, route := range pc.Routes {
+	for _, route := range listener.Routes {
 		targetURL, err := url.Parse(fmt.Sprintf("https://%s:%s", hostname, route.TargetPort))
 		if err != nil {
 			return fmt.Errorf("failed to parse target URL for port %s: %v", route.TargetPort, err)
@@ -98,9 +126,11 @@ func (pc *ProxyConfig) Start() error {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		host := strings.ToLower(r.Host)
 
-		for _, route := range pc.Routes {
+		for _, route := range listener.Routes {
 			for _, domain := range route.Domains {
-				if host == domain || host == domain+":443" {
+				// Strip port from host for comparison
+				hostWithoutPort := strings.Split(host, ":")[0]
+				if hostWithoutPort == domain || host == domain {
 					hostname := os.Getenv("NODE_IP")
 					if hostname == "" {
 						hostname = "localhost"
@@ -132,23 +162,25 @@ func (pc *ProxyConfig) Start() error {
 	})
 
 	tlsConfig := &tls.Config{
-		GetCertificate: pc.getCertificate,
+		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			return pc.getCertificateForListener(info, listener)
+		},
 	}
 
 	server := &http.Server{
-		Addr:      pc.ListenPort,
+		Addr:      listener.ListenPort,
 		Handler:   mux,
 		TLSConfig: tlsConfig,
 	}
 
-	log.Printf("Starting reverse proxy on port %s", pc.ListenPort)
+	log.Printf("Starting reverse proxy on port %s", listener.ListenPort)
 	return server.ListenAndServeTLS("", "")
 }
 
-func (pc *ProxyConfig) getCertificate(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+func (pc *ProxyConfig) getCertificateForListener(info *tls.ClientHelloInfo, listener ListenerConfig) (*tls.Certificate, error) {
 	host := strings.ToLower(info.ServerName)
 
-	for _, route := range pc.Routes {
+	for _, route := range listener.Routes {
 		for _, domain := range route.Domains {
 			if host == domain {
 				cert, err := tls.LoadX509KeyPair(route.CertFile, route.KeyFile)
@@ -161,8 +193,9 @@ func (pc *ProxyConfig) getCertificate(info *tls.ClientHelloInfo) (*tls.Certifica
 		}
 	}
 
-	if len(pc.Routes) > 0 {
-		cert, err := tls.LoadX509KeyPair(pc.Routes[0].CertFile, pc.Routes[0].KeyFile)
+	// Fallback to first route's certificate
+	if len(listener.Routes) > 0 {
+		cert, err := tls.LoadX509KeyPair(listener.Routes[0].CertFile, listener.Routes[0].KeyFile)
 		if err != nil {
 			return nil, err
 		}
