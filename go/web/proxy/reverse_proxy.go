@@ -40,7 +40,7 @@ func NewReverseProxy() *ProxyConfig {
 				KeyFile:    "probler.dev/private.key.pem",
 			},
 			{
-				Domains:    []string{"www.probler.dev", "probler.dev"},
+				Domains:    []string{"www.probler.dev:13443", "probler.dev:13443"},
 				TargetPort: "13443",
 				CertFile:   "probler.dev/domain.cert.pem",
 				KeyFile:    "probler.dev/private.key.pem",
