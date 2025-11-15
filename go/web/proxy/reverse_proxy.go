@@ -54,7 +54,7 @@ func NewReverseProxy() *ProxyConfig {
 				},
 			},
 			{
-				ListenPort: ":13443",
+				ListenPort: ":14443",
 				Routes: []RouteConfig{
 					{
 						Domains:    []string{"www.probler.dev", "probler.dev"},
