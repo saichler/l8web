@@ -17,10 +17,10 @@ type ProxyConfig struct {
 }
 
 type RouteConfig struct {
-	Domains     []string
-	TargetPort  string
-	CertFile    string
-	KeyFile     string
+	Domains    []string
+	TargetPort string
+	CertFile   string
+	KeyFile    string
 }
 
 func NewReverseProxy() *ProxyConfig {
@@ -36,6 +36,12 @@ func NewReverseProxy() *ProxyConfig {
 			{
 				Domains:    []string{"www.probler.dev", "probler.dev"},
 				TargetPort: "2443",
+				CertFile:   "probler.dev/domain.cert.pem",
+				KeyFile:    "probler.dev/private.key.pem",
+			},
+			{
+				Domains:    []string{"www.probler.dev", "probler.dev"},
+				TargetPort: "13443",
 				CertFile:   "probler.dev/domain.cert.pem",
 				KeyFile:    "probler.dev/private.key.pem",
 			},
