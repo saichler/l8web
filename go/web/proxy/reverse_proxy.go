@@ -64,6 +64,17 @@ func NewReverseProxy() *ProxyConfig {
 					},
 				},
 			},
+			{
+				ListenPort: ":9092",
+				Routes: []RouteConfig{
+					{
+						Domains:    []string{"www.probler.dev", "probler.dev"},
+						TargetPort: "9092",
+						CertFile:   "probler.dev/domain.cert.pem",
+						KeyFile:    "probler.dev/private.key.pem",
+					},
+				},
+			},
 		},
 	}
 }
