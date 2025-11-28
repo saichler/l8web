@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8utils/go/utils/certs"
+	"github.com/saichler/l8utils/go/utils/ipsegment"
 	"github.com/saichler/l8utils/go/utils/maps"
 	"google.golang.org/protobuf/proto"
 )
@@ -47,7 +47,7 @@ func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 		_, err := os.Open(rs.CertName + ".crt")
 		if err != nil {
 			fmt.Println("Error loading certificate:", err)
-			certs.CreateLayer8Crt(rs.CertName, protocol.MachineIP, int64(rs.Port))
+			certs.CreateLayer8Crt(rs.CertName, ipsegment.MachineIP, int64(rs.Port))
 		}
 	}
 
