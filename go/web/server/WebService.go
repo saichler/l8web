@@ -29,6 +29,7 @@ type WebService struct {
 var mtx = &sync.Mutex{}
 var registered = map[uint32]bool{}
 var registeredAuth = false
+var authEnabled = false
 
 func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.resources = vnic.Resources()
@@ -47,6 +48,8 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		registeredAuth = true
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 	}
+
+	http.DefaultServeMux.HandleFunc("/registry", this.Registry)
 
 	for _, n := range sla.Args() {
 		nic, ok := n.(ifs.IVNic)
@@ -137,4 +140,23 @@ func (this *WebService) TransactionConfig() ifs.ITransactionConfig {
 }
 func (this *WebService) WebService() ifs.IWebService {
 	return nil
+}
+
+func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
+	if authEnabled {
+		bearer := r.Header.Get("Authorization")
+		if bearer == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, ok := this.resources.Security().ValidateToken(bearer)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+	typeList := this.resources.Registry().TypeList()
+	byt, _ := protojson.Marshal(typeList)
+	w.WriteHeader(http.StatusOK)
+	w.Write(byt)
 }

@@ -65,6 +65,7 @@ func (this *RestServer) patternOf(handler *ServiceHandler) string {
 }
 
 func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
+	authEnabled = this.Authentication
 	handler := &ServiceHandler{authEnabled: this.Authentication}
 	handler.serviceName = ws.ServiceName()
 	handler.serviceArea = ws.ServiceArea()
