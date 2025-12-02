@@ -24,6 +24,7 @@ const (
 type WebService struct {
 	server    ifs.IWebServer
 	resources ifs.IResources
+	adjacents []ifs.IResources
 }
 
 var mtx = &sync.Mutex{}
@@ -49,12 +50,16 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 		http.DefaultServeMux.HandleFunc("/registry", this.Registry)
 	}
-	
+
 	for _, n := range sla.Args() {
 		nic, ok := n.(ifs.IVNic)
 		if ok {
 			_, ok = registered[nic.Resources().SysConfig().VnetPort]
 			if !ok {
+				if this.adjacents == nil {
+					this.adjacents = make([]ifs.IResources, 0)
+				}
+				this.adjacents = append(this.adjacents, nic.Resources())
 				registered[nic.Resources().SysConfig().VnetPort] = true
 				go nic.Resources().Services().Activate(sla, nic)
 			}
