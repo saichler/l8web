@@ -31,6 +31,7 @@ var mtx = &sync.Mutex{}
 var registered = map[uint32]bool{}
 var registeredAuth = false
 var authEnabled = false
+var adjacentTokens = make(map[string]string)
 
 func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.resources = vnic.Resources()
@@ -98,6 +99,17 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsn)
 		fmt.Println("Failed to authenticate user/pass #3")
 		return
+	}
+
+	if this.adjacents != nil {
+		for _, adjacent := range this.adjacents {
+			aToken, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
+			if aErr == nil {
+				mtx.Lock()
+				adjacentTokens[token] = aToken
+				mtx.Unlock()
+			}
+		}
 	}
 
 	authToken := &l8api.AuthToken{}

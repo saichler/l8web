@@ -77,6 +77,14 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		}
 		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
 		if !ok {
+			mtx.Lock()
+			aToken := adjacentTokens[bearer]
+			mtx.Unlock()
+			if aToken != "" {
+				id, ok = this.vnic.Resources().Security().ValidateToken(aToken)
+			}
+		}
+		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
