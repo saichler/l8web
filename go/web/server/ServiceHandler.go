@@ -85,7 +85,10 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			mtx.Lock()
 			aToken, ok := adjacentTokens[bearer]
 			if !ok {
-				fmt.Println("Token exist: ", aToken)
+				fmt.Println("Token does exist!")
+				for k, v := range adjacentTokens {
+					fmt.Println(k, " / ", v)
+				}
 			}
 			mtx.Unlock()
 			if aToken != "" {

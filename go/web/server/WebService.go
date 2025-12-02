@@ -106,7 +106,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		for _, adjacent := range this.adjacents {
 			aToken, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
 			if aErr == nil {
-				fmt.Println("[Adjacent] token")
+				fmt.Println("[Adjacent] token ", aToken)
 				mtx.Lock()
 				adjacentTokens[token] = aToken
 				mtx.Unlock()
