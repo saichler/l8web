@@ -61,7 +61,10 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 				}
 				this.adjacents = append(this.adjacents, nic.Resources())
 				registered[nic.Resources().SysConfig().VnetPort] = true
-				go nic.Resources().Services().Activate(sla, nic)
+				go func() {
+					time.Sleep(time.Second * 5)
+					nic.Resources().Services().Activate(sla, nic)
+				}()
 			}
 		}
 	}
