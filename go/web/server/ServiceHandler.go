@@ -78,22 +78,15 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
 		aToken := ""
 		if !ok {
-			fmt.Println("Token was: ", bearer)
+			//This might be a request for the adjacent
 			if strings.HasPrefix(bearer, "bearer") || strings.HasPrefix(bearer, "Bearer") {
 				bearer = bearer[7:]
 			}
-			fmt.Println("Token is: ", bearer)
+
 			mtx.Lock()
 			aToken, ok = adjacentTokens[bearer]
-			if !ok {
-				fmt.Println("Token does not exist!")
-				for k, v := range adjacentTokens {
-					fmt.Println(k, " / ", v)
-				}
-			} else {
-				fmt.Println("Adjucent Token is: ", aToken)
-			}
 			mtx.Unlock()
+			
 			if aToken != "" {
 				id, ok = this.vnic.Resources().Security().ValidateToken(aToken)
 			}

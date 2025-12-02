@@ -101,17 +101,15 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//We need to authenticate with the adjacent as well
+	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
-		fmt.Println("[Adjacent] begin")
 		for _, adjacent := range this.adjacents {
 			aToken, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
 			if aErr == nil {
-				fmt.Println("[Adjacent] token ", aToken)
 				mtx.Lock()
 				adjacentTokens[token] = aToken
 				mtx.Unlock()
-			} else {
-				fmt.Println("[Adjacent] error: ", aErr)
 			}
 		}
 	}
