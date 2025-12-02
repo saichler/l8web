@@ -102,12 +102,16 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if this.adjacents != nil {
+		fmt.Println("[Adjacent] begin")
 		for _, adjacent := range this.adjacents {
 			aToken, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
 			if aErr == nil {
+				fmt.Println("[Adjacent] token")
 				mtx.Lock()
 				adjacentTokens[token] = aToken
 				mtx.Unlock()
+			} else {
+				fmt.Println("[Adjacent] error: ", aErr)
 			}
 		}
 	}
