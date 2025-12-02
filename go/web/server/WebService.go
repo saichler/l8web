@@ -47,10 +47,9 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 	if !registeredAuth {
 		registeredAuth = true
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
+		http.DefaultServeMux.HandleFunc("/registry", this.Registry)
 	}
-
-	http.DefaultServeMux.HandleFunc("/registry", this.Registry)
-
+	
 	for _, n := range sla.Args() {
 		nic, ok := n.(ifs.IVNic)
 		if ok {
