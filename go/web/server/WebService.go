@@ -50,6 +50,9 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		registeredAuth = true
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 		http.DefaultServeMux.HandleFunc("/registry", this.Registry)
+		http.DefaultServeMux.HandleFunc("/tfaSetup", this.TFASetup)
+		http.DefaultServeMux.HandleFunc("/tfaSetupVerify", this.TFAVerify)
+		http.DefaultServeMux.HandleFunc("/tfaVerify", this.TFAVerify)
 	}
 
 	for _, n := range sla.Args() {
