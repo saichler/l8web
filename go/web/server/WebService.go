@@ -93,7 +93,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read user/pass #2")
 		return
 	}
-	token, tfa, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass)
+	token, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
@@ -108,7 +108,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
 		for _, adjacent := range this.adjacents {
-			aToken, _, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
+			aToken, _, _, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
 			if aErr == nil {
 				mtx.Lock()
 				adjacentTokens[token] = aToken
@@ -119,7 +119,8 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 
 	authToken := &l8api.AuthToken{}
 	authToken.Token = token
-	authToken.Tfa = tfa
+	authToken.NeedTfa = needTFA
+	authToken.SetupTfa = setupTFA
 	w.WriteHeader(http.StatusOK)
 	jsn, _ := protojson.Marshal(authToken)
 	w.Write(jsn)
