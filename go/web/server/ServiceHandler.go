@@ -77,6 +77,11 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		}
 		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
 		aToken := ""
+		if !ok && id != "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(id))
+			return
+		}
 		if !ok {
 			//This might be a request for the adjacent
 			if strings.HasPrefix(bearer, "bearer") || strings.HasPrefix(bearer, "Bearer") {
@@ -86,7 +91,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			mtx.Lock()
 			aToken, ok = adjacentTokens[bearer]
 			mtx.Unlock()
-			
+
 			if aToken != "" {
 				id, ok = this.vnic.Resources().Security().ValidateToken(aToken)
 			}
