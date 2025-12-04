@@ -13,7 +13,7 @@ func (this *WebService) TFASetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secret, qr, err := this.vnic.Resources().Security().TFASetup(body.UserId)
+	secret, qr, err := this.vnic.Resources().Security().TFASetup(body.UserId, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
