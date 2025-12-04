@@ -77,7 +77,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		}
 		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
 		aToken := ""
-		if !ok && id != "" {
+		if !ok && (id == "Token Setup TFA" || id == "Token Need TFA Verification") {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(id))
 			return
