@@ -23,7 +23,7 @@ const (
 
 type WebService struct {
 	server    ifs.IWebServer
-	resources ifs.IResources
+	vnic      ifs.IVNic
 	adjacents []ifs.IResources
 }
 
@@ -34,7 +34,7 @@ var authEnabled = false
 var adjacentTokens = make(map[string]string)
 
 func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
-	this.resources = vnic.Resources()
+	this.vnic = vnic
 	vnic.Resources().Registry().Register(&l8web.L8WebService{})
 	this.server = sla.Args()[0].(ifs.IWebServer)
 	go func() {
@@ -93,7 +93,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read user/pass #2")
 		return
 	}
-	token, err := this.resources.Security().Authenticate(user.User, user.Pass)
+	token, tfa, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
@@ -108,7 +108,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
 		for _, adjacent := range this.adjacents {
-			aToken, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
+			aToken, _, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
 			if aErr == nil {
 				mtx.Lock()
 				adjacentTokens[token] = aToken
@@ -119,6 +119,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 
 	authToken := &l8api.AuthToken{}
 	authToken.Token = token
+	authToken.Tfa = tfa
 	w.WriteHeader(http.StatusOK)
 	jsn, _ := protojson.Marshal(authToken)
 	w.Write(jsn)
@@ -173,13 +174,13 @@ func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		_, ok := this.resources.Security().ValidateToken(bearer)
+		_, ok := this.vnic.Resources().Security().ValidateToken(bearer)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 	}
-	typeList := this.resources.Registry().TypeList()
+	typeList := this.vnic.Resources().Registry().TypeList()
 	byt, _ := protojson.Marshal(typeList)
 	w.WriteHeader(http.StatusOK)
 	w.Write(byt)

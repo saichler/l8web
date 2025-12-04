@@ -13,7 +13,7 @@ func (this *WebService) TFASetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secret, qr, err := this.resources.Security().TFASetup(body.UserId)
+	secret, qr, err := this.vnic.Resources().Security().TFASetup(body.UserId)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -39,7 +39,7 @@ func (this *WebService) TFAVerify(w http.ResponseWriter, r *http.Request) {
 	if !bodyToProto(w, r, "POST", body) {
 		return
 	}
-	err := this.resources.Security().TFAVerify(body.UserId, body.Code)
+	err := this.vnic.Resources().Security().TFAVerify(body.UserId, body.Code, body.Bearer, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(err.Error()))
