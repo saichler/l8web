@@ -58,3 +58,33 @@ func (this *WebService) TFAVerify(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(respData)
 }
+
+func (this *WebService) Captcha(w http.ResponseWriter, r *http.Request) {
+	cp := this.vnic.Resources().Security().Captcha()
+	resp := &l8api.Captcha{}
+	resp.Captcha = cp
+
+	respData, err := protojson.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(respData)
+}
+
+func (this *WebService) Register(w http.ResponseWriter, r *http.Request) {
+	body := &l8api.AuthUser{}
+	if !bodyToProto(w, r, "POST", body) {
+		return
+	}
+	err := this.vnic.Resources().Security().Register(body.User, body.Pass, body.Captcha, this.vnic)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
