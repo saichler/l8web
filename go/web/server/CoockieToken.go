@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var BearerCookieName = "bearer_token"
+var BearerCookieName = "bToken"
 
 func extractToken(r *http.Request) string {
 	// 1. Try cookie first (primary method for browser requests)

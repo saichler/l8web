@@ -130,8 +130,17 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	authToken.Token = token
 	authToken.NeedTfa = needTFA
 	authToken.SetupTfa = setupTFA
-	w.WriteHeader(http.StatusOK)
 	jsn, _ := protojson.Marshal(authToken)
+	http.SetCookie(w, &http.Cookie{
+		Name:     BearerCookieName,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   86400,
+		HttpOnly: true,
+		Secure:   true, // false for local dev without HTTPS
+		SameSite: http.SameSiteStrictMode,
+	})
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsn)
 }
 
