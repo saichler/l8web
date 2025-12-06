@@ -33,6 +33,7 @@ var registered = map[uint32]bool{}
 var registeredAuth = false
 var authEnabled = false
 var adjacentTokens = make(map[string]string)
+var proxyMode = false
 
 func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.vnic = vnic
@@ -49,6 +50,11 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 
 	if !registeredAuth {
 		registeredAuth = true
+		if len(sla.Args()) > 1 {
+			proxy := sla.Args()[1].(ifs.IWebProxy)
+			proxy.SetValidator(this)
+			proxy.RegisterHandlers(nil)
+		}
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 		http.DefaultServeMux.HandleFunc("/registry", this.Registry)
 		http.DefaultServeMux.HandleFunc("/tfaSetup", this.TFASetup)
@@ -56,11 +62,6 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/tfaVerify", this.TFAVerify)
 		http.DefaultServeMux.HandleFunc("/captcha", this.Captcha)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
-		if len(sla.Args()) > 1 {
-			proxy := sla.Args()[1].(ifs.IWebProxy)
-			proxy.SetValidator(this)
-			proxy.RegisterHandlers(nil)
-		}
 	}
 
 	for _, n := range sla.Args() {

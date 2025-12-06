@@ -82,6 +82,10 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 				if indexPath != "/" && !strings.HasSuffix(indexPath, "/") {
 					indexPath += "/"
 				}
+				// In proxy mode, register root index.html as "/index.html" instead of "/"
+				if proxyMode && indexPath == "/" {
+					indexPath = "/index.html"
+				}
 				fmt.Println("Loaded index.html at path:", indexPath)
 				// Store mapping
 				webUIFileMapMutex.Lock()
@@ -89,7 +93,7 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 				webUIFileMapMutex.Unlock()
 
 				// Don't register handlers for index.html files - let smartRootHandler handle them
-				// Only register specific handlers for non-root index.html files
+				// Only register specific handlers for non-root index.html files (or proxy mode root)
 				if indexPath != "/" {
 					webUIHandlerRegistryMutex.RLock()
 					_, exists := webUIHandlerRegistry[indexPath]

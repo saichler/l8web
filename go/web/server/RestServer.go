@@ -31,6 +31,11 @@ type RestServerConfig struct {
 	Prefix         string
 }
 
+func NewRestServerNoIndex(config *RestServerConfig) (ifs.IWebServer, error) {
+	proxyMode = true
+	return NewRestServer(config)
+}
+
 func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs := &RestServer{}
 	rs.Authentication = config.Authentication
