@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -55,6 +56,10 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/tfaVerify", this.TFAVerify)
 		http.DefaultServeMux.HandleFunc("/captcha", this.Captcha)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
+		if len(sla.Args()) > 1 {
+			proxy := sla.Args()[1].(ifs.IWebProxy)
+			proxy.RegisterHandlers(nil)
+		}
 	}
 
 	for _, n := range sla.Args() {
@@ -187,4 +192,16 @@ func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
 	byt, _ := protojson.Marshal(typeList)
 	w.WriteHeader(http.StatusOK)
 	w.Write(byt)
+}
+
+func (this *WebService) ValidateBearerToken(r *http.Request) error {
+	bearer := r.Header.Get("Authorization")
+	if bearer == "" {
+		return errors.New("unauthorized")
+	}
+	_, ok := this.vnic.Resources().Security().ValidateToken(bearer)
+	if !ok {
+		return errors.New("unauthorized")
+	}
+	return nil
 }
