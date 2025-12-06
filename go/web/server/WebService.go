@@ -58,6 +58,7 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
 		if len(sla.Args()) > 1 {
 			proxy := sla.Args()[1].(ifs.IWebProxy)
+			proxy.SetValidator(this)
 			proxy.RegisterHandlers(nil)
 		}
 	}
