@@ -199,6 +199,10 @@ func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
 func (this *WebService) ValidateBearerToken(r *http.Request) error {
 	bearer := r.Header.Get("Authorization")
 	if bearer == "" {
+		bearer = extractToken(r)
+	}
+	if bearer == "" {
+		fmt.Println("Bearer is empty")
 		return errors.New("unauthorized")
 	}
 	_, ok := this.vnic.Resources().Security().ValidateToken(bearer)
