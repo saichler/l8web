@@ -38,7 +38,8 @@ func (this *RestServer) LoadWebUI() {
 	this.registerHTMLHandlers()
 
 	// Register smart root handler LAST (only once) so specific paths are matched first
-	if !rootHandlerRegistered {
+	// Skip in proxy mode - the proxy handles the root path
+	if !rootHandlerRegistered && !proxyMode {
 		http.HandleFunc("/", this.smartRootHandler)
 		rootHandlerRegistered = true
 	}
