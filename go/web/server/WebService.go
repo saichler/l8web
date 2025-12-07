@@ -51,9 +51,11 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 	if !registeredAuth {
 		registeredAuth = true
 		if len(sla.Args()) > 1 {
-			proxy := sla.Args()[1].(ifs.IWebProxy)
-			proxy.SetValidator(this)
-			proxy.RegisterHandlers(nil)
+			proxy, ok := sla.Args()[1].(ifs.IWebProxy)
+			if ok {
+				proxy.SetValidator(this)
+				proxy.RegisterHandlers(nil)
+			}
 		}
 		http.DefaultServeMux.HandleFunc("/auth", this.Auth)
 		http.DefaultServeMux.HandleFunc("/registry", this.Registry)
