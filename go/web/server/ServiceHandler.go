@@ -84,7 +84,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		}
 		if !ok {
 			//This might be a request for the adjacent
-			if strings.HasPrefix(bearer, "bearer") || strings.HasPrefix(bearer, "Bearer") {
+			if len(bearer) > 7 && strings.HasPrefix(bearer, "bearer") || strings.HasPrefix(bearer, "Bearer") {
 				bearer = bearer[7:]
 			}
 
