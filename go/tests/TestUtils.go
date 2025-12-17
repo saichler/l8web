@@ -2,12 +2,12 @@ package tests
 
 import (
 	"encoding/base64"
+	"github.com/saichler/l8utils/go/utils/ipsegment"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/saichler/l8bus/go/overlay/plugins"
-	"github.com/saichler/l8bus/go/overlay/protocol"
 	"github.com/saichler/l8bus/go/overlay/vnic"
 	. "github.com/saichler/l8test/go/infra/t_resources"
 	"github.com/saichler/l8types/go/ifs"
@@ -32,7 +32,7 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 	webNic.Resources().Registry().Register(&l8health.L8Top{})
 
 	serverConfig := &server.RestServerConfig{
-		Host:           protocol.MachineIP,
+		Host:           ipsegment.MachineIP,
 		Port:           8080,
 		Authentication: true,
 		CertName:       "test",
@@ -79,7 +79,7 @@ func createRestClient2(t *testing.T, pb interface{}, prefix string) (*client.Res
 	resources.Registry().Register(&l8api.AuthToken{})
 	resources.Registry().Register(&l8api.AuthUser{})
 	clientConfig := &client.RestClientConfig{
-		Host:          protocol.MachineIP,
+		Host:          ipsegment.MachineIP,
 		Port:          8080,
 		Https:         true,
 		TokenRequired: true,

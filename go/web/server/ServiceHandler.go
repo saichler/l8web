@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,45 +18,18 @@ type ServiceHandler struct {
 	serviceName string
 	serviceArea byte
 	vnic        ifs.IVNic
-	method2Body map[string]proto.Message
-	method2Resp map[string]proto.Message
+	webService  ifs.IWebService
 	authEnabled bool
+}
+
+type ServiceAction struct {
+	body proto.Message
+	resp proto.Message
 }
 
 var Timeout = 30
 var Target = ""
 var Method = ifs.M_Leader
-
-func (this *ServiceHandler) addEndPoint(method, body, resp string) {
-	if body != "" {
-		info, err := this.vnic.Resources().Registry().Info(body)
-		if err != nil {
-			this.vnic.Resources().Logger().Error(err)
-			return
-		}
-		ins, err := info.NewInstance()
-		if err != nil {
-			this.vnic.Resources().Logger().Error(err)
-			return
-		}
-		this.vnic.Resources().Registry().Register(ins)
-		this.method2Body[method] = ins.(proto.Message)
-	}
-	if resp != "" {
-		info, err := this.vnic.Resources().Registry().Info(resp)
-		if err != nil {
-			this.vnic.Resources().Logger().Error(err)
-			return
-		}
-		ins, err := info.NewInstance()
-		if err != nil {
-			this.vnic.Resources().Logger().Error(err)
-			return
-		}
-		this.vnic.Resources().Registry().Register(ins)
-		this.method2Resp[method] = ins.(proto.Message)
-	}
-}
 
 func (this *ServiceHandler) ServiceName() string {
 	return this.serviceName
@@ -103,81 +75,62 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		aaaid = id
 	}
 
-	method := r.Method
-	body, err := this.newBody(method)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Cannot find pb for method " + method + "\n"))
-		w.Write([]byte(err.Error()))
-		fmt.Println("Cannot find pb for method " + method + "\n")
-		return
-	}
-
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Failed to read body for method " + method + "\n"))
+		w.Write([]byte("Failed to read body for method " + r.Method + "\n"))
 		w.Write([]byte(err.Error()))
-		fmt.Println("Failed to read body for method " + method + "\n")
+		fmt.Println("Failed to read body for method " + r.Method + "\n")
 		return
 	}
 
-	if data != nil && len(data) > 0 {
-		err = protojson.Unmarshal(data, body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
-			w.Write([]byte("body for method " + method + string(data) + "\n"))
-			w.Write([]byte(err.Error()))
-			fmt.Println("Failed to unmarshal body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n")
-			fmt.Println("body for method " + method + string(data) + "\n")
-			return
-		}
-	}
-	if strings.ToLower(method) == "get" {
+	if strings.ToLower(r.Method) == "get" && (data == nil || len(data) == 0) {
 		qData := r.URL.Query().Get("body")
-		if qData != "" {
-			err = protojson.Unmarshal([]byte(qData), body)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Failed to unmarshal query body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n"))
-				w.Write([]byte("body for method " + method + string(data) + "\n"))
-				w.Write([]byte(err.Error()))
-				fmt.Println("Failed to unmarshal query body for method " + method + " element " + reflect.ValueOf(body).Elem().Type().Name() + "\n")
-				fmt.Println("body for method " + method + string(data) + "\n")
-				return
-			}
-		}
+		data = []byte(qData)
 	}
 
-	var resp ifs.IElements
+	action := methodToAction(r.Method, nil)
+	body, _, err := this.webService.Protos(string(data), action)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Cannot find pb for method " + r.Method + "\n"))
+		w.Write([]byte(err.Error()))
+		fmt.Println("Cannot find pb for method " + r.Method + "\n")
+		return
+	}
+
+	action = methodToAction(r.Method, body)
+	var elems ifs.IElements
+
+	dest := this.vnic.Resources().SysConfig().RemoteUuid
 	if this.serviceName == health.ServiceName {
 		this.vnic.Resources().Logger().Info("Sending to vnet")
-		resp = this.vnic.Request(this.vnic.Resources().SysConfig().RemoteUuid, this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout)
+		elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, Timeout)
 	} else {
 		if Target != "" {
-			resp = this.vnic.Request(Target, this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
+			elems = this.vnic.Request(Target, this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
 		} else {
 			if Method == ifs.M_Leader {
-				resp = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
+				elems = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
 			} else if Method == ifs.M_Local {
-				resp = this.vnic.LocalRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
+				elems = this.vnic.LocalRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
 			} else {
-				resp = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, methodToAction(method, body), body, Timeout, aaaid)
+				elems = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
 			}
 		}
 	}
 
-	if resp.Error() != nil {
+	if elems.Error() != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error from single request:"))
-		w.Write([]byte(resp.Error().Error()))
+		w.Write([]byte(elems.Error().Error()))
 		fmt.Println("Error from single request:")
-		fmt.Println(resp.Error().Error())
+		fmt.Println(elems.Error().Error())
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	response, e := resp.AsList(this.vnic.Resources().Registry())
+	response, e := elems.AsList(this.vnic.Resources().Registry())
 	if e != nil {
 		w.Write([]byte("{}"))
 		/*
@@ -198,22 +151,6 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write(j)
 	}
-}
-
-func (this *ServiceHandler) newBody(method string) (proto.Message, error) {
-	pb, ok := this.method2Body[method]
-	if !ok {
-		return nil, errors.New("Method does not have any protobuf registered")
-	}
-	return reflect.New(reflect.ValueOf(pb).Elem().Type()).Interface().(proto.Message), nil
-}
-
-func (this *ServiceHandler) newResp(method string) (proto.Message, error) {
-	pb, ok := this.method2Resp[method]
-	if !ok {
-		return nil, errors.New("Method does not have any protobuf registered")
-	}
-	return reflect.New(reflect.ValueOf(pb).Elem().Type()).Interface().(proto.Message), nil
 }
 
 func methodToAction(method string, body proto.Message) ifs.Action {

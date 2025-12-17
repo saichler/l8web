@@ -153,7 +153,10 @@ func (this *WebService) DeActivate() error {
 func (this *WebService) Post(pb ifs.IElements, vnic ifs.IVNic) ifs.IElements {
 	webService := pb.Element().(*l8web.L8WebService)
 	ws := &web.WebService{}
-	ws.DeSerialize(webService)
+	err := ws.DeSerialize(webService, this.vnic.Resources().Registry())
+	if err != nil {
+		vnic.Resources().Logger().Error(err.Error())
+	}
 	vnic.Resources().Logger().Info("Received Webservice ", ws.ServiceName(), " ", ws.ServiceArea())
 	if ws.Plugin() != "" {
 		plg := &l8web.L8Plugin{Data: ws.Plugin()}

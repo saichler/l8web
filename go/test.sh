@@ -20,8 +20,6 @@ read -n 1 -s -r -p "Press any key to continue..."
 
 rm -rf ./tests/*.so
 
-cp ../../l8secure/go/secure/provider/loader.so ./tests/loader.so
-
 cd ../../l8test/go/infra/t_plugin/registry
 ./build.sh
 cd ../service

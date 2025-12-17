@@ -13,7 +13,6 @@ import (
 	"github.com/saichler/l8utils/go/utils/certs"
 	"github.com/saichler/l8utils/go/utils/ipsegment"
 	"github.com/saichler/l8utils/go/utils/maps"
-	"google.golang.org/protobuf/proto"
 )
 
 var endPoints = maps.NewSyncMap()
@@ -75,14 +74,7 @@ func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
 	handler.serviceName = ws.ServiceName()
 	handler.serviceArea = ws.ServiceArea()
 	handler.vnic = vnic
-	handler.method2Body = make(map[string]proto.Message)
-	handler.method2Resp = make(map[string]proto.Message)
-
-	handler.addEndPoint(http.MethodPost, ws.PostBody(), ws.PostResp())
-	handler.addEndPoint(http.MethodPut, ws.PutBody(), ws.PutResp())
-	handler.addEndPoint(http.MethodPatch, ws.PatchBody(), ws.PatchResp())
-	handler.addEndPoint(http.MethodDelete, ws.DeleteBody(), ws.DeleteResp())
-	handler.addEndPoint(http.MethodGet, ws.GetBody(), ws.GetResp())
+	handler.webService = ws
 
 	path := this.patternOf(handler)
 	_, ok := endPoints.Get(path)
