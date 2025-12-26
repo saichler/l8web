@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)
+ *
+ * Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// ServiceHandler.go implements HTTP request handling for Layer 8 web services.
+// It bridges HTTP requests to the Layer 8 network overlay, handling authentication,
+// request routing, and response serialization.
+
 package server
 
 import (
@@ -14,31 +33,58 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ServiceHandler handles HTTP requests for a specific web service, routing them
+// through the Layer 8 VNic to the appropriate service implementation. It manages
+// authentication validation, request parsing, and response serialization.
 type ServiceHandler struct {
-	serviceName string
-	serviceArea byte
-	vnic        ifs.IVNic
-	webService  ifs.IWebService
-	authEnabled bool
+	serviceName string          // Name of the service being handled
+	serviceArea byte            // Service area identifier for routing
+	vnic        ifs.IVNic       // Layer 8 Virtual Network Interface for communication
+	webService  ifs.IWebService // The web service implementation
+	authEnabled bool            // Whether authentication is required for this handler
 }
 
+// ServiceAction encapsulates request and response Protocol Buffer messages
+// for a service operation.
 type ServiceAction struct {
-	body proto.Message
-	resp proto.Message
+	body proto.Message // Request body message
+	resp proto.Message // Response message
 }
 
+// Timeout specifies the default request timeout in seconds for VNic operations.
 var Timeout = 30
+
+// Target specifies a specific service instance UUID to route requests to.
+// If empty, requests are routed based on the Method setting.
 var Target = ""
+
+// Method specifies the routing method for requests: M_Leader (leader-based),
+// M_Local (local service), or M_Proximity (proximity-based routing).
 var Method = ifs.M_Leader
 
+// ServiceName returns the name of the service this handler manages.
 func (this *ServiceHandler) ServiceName() string {
 	return this.serviceName
 }
 
+// ServiceArea returns the service area identifier used for request routing.
 func (this *ServiceHandler) ServiceArea() byte {
 	return this.serviceArea
 }
 
+// serveHttp is the main HTTP handler function that processes incoming requests.
+// It performs the following steps:
+// 1. Validates bearer token authentication if enabled
+// 2. Reads and parses the request body (supports query parameter for GET requests)
+// 3. Routes the request through the Layer 8 VNic based on routing method
+// 4. Serializes and returns the response as JSON
+//
+// Authentication tokens are checked in the following order:
+// - Authorization header (Bearer token)
+// - Adjacent token mapping (for cross-VNet requests)
+//
+// Returns HTTP 401 Unauthorized if authentication fails, HTTP 400 Bad Request
+// for parsing errors, or HTTP 200 OK with JSON response on success.
 func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	aaaid := ""
 	if this.authEnabled {
@@ -153,6 +199,18 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// methodToAction converts an HTTP method string to a Layer 8 Action constant.
+// If the request body contains an L8Query with "mapreduce" in the text, it returns
+// the MapReduce variant of the action for distributed query execution.
+//
+// Supported mappings:
+//   - POST   -> ifs.POST or ifs.MapR_POST
+//   - GET    -> ifs.GET or ifs.MapR_GET
+//   - DELETE -> ifs.DELETE or ifs.MapR_DELETE
+//   - PUT    -> ifs.PUT or ifs.MapR_PUT
+//   - PATCH  -> ifs.PATCH or ifs.MapR_PATCH
+//
+// Defaults to ifs.GET for unknown methods.
 func methodToAction(method string, body proto.Message) ifs.Action {
 	isMapReduce := false
 	q, ok := body.(*l8api.L8Query)

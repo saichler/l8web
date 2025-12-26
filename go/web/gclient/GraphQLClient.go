@@ -1,3 +1,43 @@
+/*
+ * Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)
+ *
+ * Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package gclient provides a GraphQL HTTP client for communicating with GraphQL APIs.
+// It supports both HTTP and HTTPS with custom CA certificates, bearer token authentication,
+// API key authentication, GZIP compression, and automatic retry on timeout.
+//
+// Features:
+//   - GraphQL query and mutation execution
+//   - Variable support for parameterized queries
+//   - Automatic GraphQL error parsing and reporting
+//   - HTTP/HTTPS with TLS certificate verification
+//   - Bearer token and API key authentication
+//   - GZIP response decompression
+//   - Automatic retry on timeout (up to 5 attempts with 5-second backoff)
+//   - Protocol Buffer response mapping via protojson
+//
+// Example usage:
+//
+//	config := &GraphQLClientConfig{
+//	    Host:     "api.example.com",
+//	    Port:     443,
+//	    Https:    true,
+//	    Endpoint: "/graphql",
+//	}
+//	client, _ := NewGraphQLClient(config, resources)
+//	query := `query { users { id name } }`
+//	response, _ := client.Query(query, nil, "UserList", "users")
 package gclient
 
 import (
@@ -21,59 +61,76 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// GraphQLClient is an HTTP client for communicating with GraphQL APIs.
+// It handles authentication, request building, and response parsing with
+// Protocol Buffer support.
 type GraphQLClient struct {
-	GraphQLClientConfig
-	httpClient *nethttp.Client
-	resources  ifs.IResources
+	GraphQLClientConfig                // Embedded configuration
+	httpClient          *nethttp.Client // Underlying HTTP client with TLS config
+	resources           ifs.IResources  // Layer 8 resources for type registry access
 }
 
+// GraphQLClientConfig contains configuration options for creating a GraphQL client.
 type GraphQLClientConfig struct {
-	Host          string
-	Prefix        string
-	Port          int
-	Https         bool
-	TokenRequired bool
-	Token         string
-	CertFileName  string
-	AuthInfo      *GraphQLAuthInfo
-	Endpoint      string // GraphQL endpoint path (default: /graphql)
+	Host          string           // Target server hostname (e.g., "api.example.com")
+	Prefix        string           // URL prefix for requests (e.g., "/api/v1")
+	Port          int              // Target server port
+	Https         bool             // Enable HTTPS connections
+	TokenRequired bool             // Require bearer token for requests
+	Token         string           // Current bearer token (set by Auth() or manually)
+	CertFileName  string           // Path to CA certificate file for TLS verification
+	AuthInfo      *GraphQLAuthInfo // Authentication configuration
+	Endpoint      string           // GraphQL endpoint path (default: "/graphql")
 }
 
+// GraphQLAuthInfo contains authentication configuration for the GraphQL client.
+// Supports two modes: bearer token authentication and API key authentication.
 type GraphQLAuthInfo struct {
-	NeedAuth   bool
-	BodyType   string
-	UserField  string
-	PassField  string
-	RespType   string
-	TokenField string
-	AuthPath   string
-	IsAPIKey   bool
-	ApiUser    string
-	ApiKey     string
+	NeedAuth   bool   // Enable bearer token authentication flow
+	BodyType   string // Protocol Buffer type name for auth request body
+	UserField  string // Field name for username in auth request
+	PassField  string // Field name for password in auth request
+	RespType   string // Protocol Buffer type name for auth response
+	TokenField string // Field name containing token in auth response
+	AuthPath   string // Endpoint path for authentication (e.g., "/auth")
+	IsAPIKey   bool   // Use API key authentication instead of bearer token
+	ApiUser    string // API user ID (sent as X-USER-ID header)
+	ApiKey     string // API key (sent as X-API-KEY header)
 }
 
+// GraphQLRequest represents a GraphQL operation request with query and optional variables.
 type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables,omitempty"`
+	Query     string                 `json:"query"`               // GraphQL query or mutation string
+	Variables map[string]interface{} `json:"variables,omitempty"` // Optional variables for the query
 }
 
+// GraphQLResponse represents the standard GraphQL response structure with data and errors.
 type GraphQLResponse struct {
-	Data   json.RawMessage          `json:"data,omitempty"`
-	Errors []GraphQLError           `json:"errors,omitempty"`
+	Data   json.RawMessage `json:"data,omitempty"`   // Query result data
+	Errors []GraphQLError  `json:"errors,omitempty"` // GraphQL execution errors
 }
 
+// GraphQLError represents a single error from a GraphQL operation.
 type GraphQLError struct {
-	Message    string                 `json:"message"`
-	Locations  []GraphQLErrorLocation `json:"locations,omitempty"`
-	Path       []interface{}          `json:"path,omitempty"`
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
+	Message    string                 `json:"message"`              // Error message
+	Locations  []GraphQLErrorLocation `json:"locations,omitempty"`  // Source locations where error occurred
+	Path       []interface{}          `json:"path,omitempty"`       // Path to the field that caused the error
+	Extensions map[string]interface{} `json:"extensions,omitempty"` // Additional error metadata
 }
 
+// GraphQLErrorLocation represents the line and column in the query where an error occurred.
 type GraphQLErrorLocation struct {
-	Line   int `json:"line"`
-	Column int `json:"column"`
+	Line   int `json:"line"`   // Line number (1-indexed)
+	Column int `json:"column"` // Column number (1-indexed)
 }
 
+// NewGraphQLClient creates a new GraphQL client with the provided configuration.
+// For HTTPS connections, it configures TLS:
+//   - If CertFileName is provided, it uses that CA certificate for verification
+//   - Otherwise, it uses InsecureSkipVerify (suitable for self-signed certs)
+//
+// If Endpoint is not specified, it defaults to "/graphql".
+// Returns an error if the certificate file cannot be read.
 func NewGraphQLClient(config *GraphQLClientConfig, resources ifs.IResources) (*GraphQLClient, error) {
 	gc := &GraphQLClient{}
 	gc.CertFileName = config.CertFileName
@@ -124,6 +181,8 @@ func NewGraphQLClient(config *GraphQLClientConfig, resources ifs.IResources) (*G
 	return gc, nil
 }
 
+// buildURL constructs the full URL for a GraphQL request, combining the host,
+// port, prefix, and endpoint. The prefix is not added for the /auth endpoint.
 func (gc *GraphQLClient) buildURL(end string) string {
 	url := bytes.Buffer{}
 	url.WriteString("http")
@@ -142,6 +201,10 @@ func (gc *GraphQLClient) buildURL(end string) string {
 	return url.String()
 }
 
+// request creates an HTTP POST request for a GraphQL operation with proper headers.
+// It marshals the GraphQL request to JSON, sets Authorization header if a token
+// is available, and adds API key headers if configured.
+// Panics if TokenRequired is true but no token is available for non-auth endpoints.
 func (gc *GraphQLClient) request(end string, gqlRequest *GraphQLRequest) (*nethttp.Request, error) {
 	body, err := json.Marshal(gqlRequest)
 	if err != nil {
@@ -171,6 +234,8 @@ func (gc *GraphQLClient) request(end string, gqlRequest *GraphQLRequest) (*netht
 	return request, nil
 }
 
+// isAuthPath checks if the endpoint is the configured authentication path.
+// Used to skip token requirements for the auth endpoint itself.
 func (gc *GraphQLClient) isAuthPath(end string) bool {
 	if gc.AuthInfo == nil {
 		return false
@@ -181,6 +246,8 @@ func (gc *GraphQLClient) isAuthPath(end string) bool {
 	return false
 }
 
+// is200 checks if an HTTP status string represents a successful response (2xx).
+// Parses the numeric status code from the status line (e.g., "200 OK").
 func is200(status string) (bool, error) {
 	index := strings.Index(status, " ")
 	stat, err := strconv.Atoi(status[0:index])
@@ -193,6 +260,9 @@ func is200(status string) (bool, error) {
 	return false, nil
 }
 
+// isTimeout checks if an error indicates a timeout or connection issue.
+// If so, it sleeps for 5 seconds before returning true to enable retry.
+// Detects: "connection reset by peer", "timeout", "connection timed out".
 func isTimeout(err error) bool {
 	if strings.Contains(err.Error(), "connection reset by peer") ||
 		strings.Contains(err.Error(), "timeout") ||
@@ -203,6 +273,15 @@ func isTimeout(err error) bool {
 	return false
 }
 
+// Auth performs authentication using a GraphQL login mutation.
+// It constructs a login mutation based on AuthInfo configuration, executes it,
+// and extracts the bearer token from the response. The token is stored in
+// gc.Token for use in subsequent requests.
+//
+// The generated mutation format is:
+// mutation { login(input: { user: "...", pass: "..." }) { token } }
+//
+// Returns nil if NeedAuth is false or if authentication succeeds.
 func (gc *GraphQLClient) Auth(user, pass string) error {
 	if gc.AuthInfo == nil || !gc.AuthInfo.NeedAuth {
 		return nil
@@ -250,6 +329,17 @@ func (gc *GraphQLClient) Auth(user, pass string) error {
 	return nil
 }
 
+// Execute sends a GraphQL query or mutation and returns the response as a Protocol Buffer.
+//
+// Parameters:
+//   - query: GraphQL query or mutation string
+//   - variables: Optional map of variables for parameterized queries
+//   - responseType: Protocol Buffer type name for deserializing the response
+//   - responseAttribute: Field name to extract from the "data" object (e.g., "users" for data.users)
+//   - tryCount: Current retry attempt (starts at 1, max 5)
+//
+// Handles GZIP response decompression automatically. Parses GraphQL errors and returns
+// them as Go errors. Retries on timeout errors up to 5 times with 5-second backoff.
 func (gc *GraphQLClient) Execute(query string, variables map[string]interface{}, responseType, responseAttribute string, tryCount int) (proto.Message, error) {
 	gqlRequest := &GraphQLRequest{
 		Query:     query,
@@ -348,10 +438,27 @@ func (gc *GraphQLClient) Execute(query string, variables map[string]interface{},
 	return responsePb, err
 }
 
+// Query executes a GraphQL query and returns the response as a Protocol Buffer.
+// Convenience wrapper for Execute() that starts with tryCount=1.
+//
+// Example:
+//
+//	query := `query GetUsers($limit: Int!) { users(limit: $limit) { id name } }`
+//	vars := map[string]interface{}{"limit": 10}
+//	response, _ := client.Query(query, vars, "UserList", "users")
 func (gc *GraphQLClient) Query(query string, variables map[string]interface{}, responseType, responseAttribute string) (proto.Message, error) {
 	return gc.Execute(query, variables, responseType, responseAttribute, 1)
 }
 
+// Mutate executes a GraphQL mutation and returns the response as a Protocol Buffer.
+// Convenience wrapper for Execute() that starts with tryCount=1.
+// Semantically identical to Query() but named for clarity when performing mutations.
+//
+// Example:
+//
+//	mutation := `mutation CreateUser($input: UserInput!) { createUser(input: $input) { id } }`
+//	vars := map[string]interface{}{"input": map[string]interface{}{"name": "John"}}
+//	response, _ := client.Mutate(mutation, vars, "User", "createUser")
 func (gc *GraphQLClient) Mutate(mutation string, variables map[string]interface{}, responseType, responseAttribute string) (proto.Message, error) {
 	return gc.Execute(mutation, variables, responseType, responseAttribute, 1)
 }

@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)
+ *
+ * Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// LoadWebUI.go provides web UI file serving functionality for the REST server.
+// It dynamically scans a "web" directory and registers HTTP handlers for all
+// files found, with special handling for:
+//   - index.html files at directory roots (registered as directory paths)
+//   - HTML files (registered with cache-busting headers)
+//   - Static assets (CSS, JS, images, etc.)
+//
+// The smart root handler provides SPA (Single Page Application) support by
+// serving index.html for unmatched routes, while still correctly routing
+// API endpoints based on the configured prefix.
+
 package server
 
 import (
@@ -11,13 +37,22 @@ import (
 )
 
 var (
+	// webUIFileMap maps URL paths to filesystem paths for web UI files.
 	webUIFileMap = make(map[string]string)
+	// webUIFileMapMutex protects concurrent access to webUIFileMap.
 	webUIFileMapMutex sync.RWMutex
+	// webUIHandlerRegistry tracks registered HTTP handlers to prevent duplicates.
 	webUIHandlerRegistry = make(map[string]http.HandlerFunc)
+	// webUIHandlerRegistryMutex protects concurrent access to webUIHandlerRegistry.
 	webUIHandlerRegistryMutex sync.RWMutex
+	// rootHandlerRegistered tracks whether the root "/" handler has been registered.
 	rootHandlerRegistered = false
 )
 
+// LoadWebUI scans the web directory and registers HTTP handlers for all files.
+// It clears the file map (for hot-reload) but preserves handler registrations
+// since Go's ServeMux doesn't support handler removal. In proxy mode, the root
+// handler is not registered to avoid conflicts with the reverse proxy.
 func (this *RestServer) LoadWebUI() {
 	fmt.Println("Loading UI...")
 
@@ -45,6 +80,9 @@ func (this *RestServer) LoadWebUI() {
 	}
 }
 
+// getWebDirectory searches for the web directory in common locations.
+// It checks: "web", "./web", "../web", "../../web" and returns the first
+// found path. Defaults to "web" if none are found.
 func (this *RestServer) getWebDirectory() string {
 	// Try to find web directory in various locations
 	possiblePaths := []string{
@@ -64,6 +102,10 @@ func (this *RestServer) getWebDirectory() string {
 	return "web"
 }
 
+// loadWebDir recursively scans a directory and registers file handlers.
+// For index.html files, it registers the directory path as the URL.
+// For other files, it registers the full file path. Non-HTML files get
+// handlers immediately; HTML files are registered later in registerHTMLHandlers.
 func (this *RestServer) loadWebDir(path string, webDir string) {
 	dirName := concat(webDir, path)
 	files, err := os.ReadDir(dirName)
@@ -135,6 +177,9 @@ func (this *RestServer) loadWebDir(path string, webDir string) {
 	}
 }
 
+// registerHTMLHandlers registers HTTP handlers for all .html files (except
+// index.html files which are handled by loadWebDir). This is called after
+// loadWebDir to ensure HTML handlers are registered before the root handler.
 func (this *RestServer) registerHTMLHandlers() {
 	webUIFileMapMutex.RLock()
 	defer webUIFileMapMutex.RUnlock()
@@ -158,6 +203,9 @@ func (this *RestServer) registerHTMLHandlers() {
 	}
 }
 
+// createDynamicHandler creates an HTTP handler function for a specific path.
+// The handler looks up the current file path at runtime (supporting hot-reload)
+// and serves the file with cache-busting headers to ensure fresh content.
 func (this *RestServer) createDynamicHandler(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Dynamically look up the current file path
@@ -180,6 +228,12 @@ func (this *RestServer) createDynamicHandler(path string) http.HandlerFunc {
 	}
 }
 
+// smartRootHandler is the catch-all handler for the root path and unmatched routes.
+// It provides SPA (Single Page Application) support by:
+// 1. Passing through API endpoints (those with the configured prefix) to return 404
+// 2. Serving exact file matches from the web UI map
+// 3. Serving index.html for the root path
+// 4. Returning 404 for all other unmatched paths
 func (this *RestServer) smartRootHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if this looks like an API endpoint (has prefix)
 	if this.Prefix != "" && strings.HasPrefix(r.URL.Path, this.Prefix) {
@@ -226,6 +280,8 @@ func (this *RestServer) smartRootHandler(w http.ResponseWriter, r *http.Request)
 
 
 
+// concat efficiently concatenates multiple strings using a bytes.Buffer.
+// Returns an empty string if no arguments are provided.
 func concat(strs ...string) string {
 	buff := bytes.Buffer{}
 	if strs != nil {

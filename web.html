@@ -1,3 +1,17 @@
+<!--
+ Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)
+
+ Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+ You may obtain a copy of the License at:
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,10 +344,12 @@
             display: flex;
             background: #f8f9fa;
             border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
         }
 
         .tab-button {
             flex: 1;
+            min-width: 120px;
             padding: 1rem;
             background: none;
             border: none;
@@ -430,6 +446,7 @@
             justify-content: center;
             gap: 2rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
 
         .footer-links a {
@@ -552,7 +569,7 @@
             <h1 class="hero-title">Layer 8 Web Services</h1>
             <p class="hero-subtitle">Advanced Web Infrastructure for Distributed Systems</p>
             <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
-                Comprehensive Go-based web server, REST/GraphQL clients, and reverse proxy designed for the Layer 8 Framework
+                Go-based REST/GraphQL server, clients, and SNI-based reverse proxy for the Layer 8 Framework
             </p>
             <a href="#features" class="cta-button">Explore Features</a>
             <a href="https://github.com/saichler/l8web" class="cta-button secondary">View on GitHub</a>
@@ -563,24 +580,24 @@
     <section style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 3rem 2rem;">
         <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
             <h2 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--primary-color);">
-                ✨ Recent Updates (2025)
+                Recent Updates (2025)
             </h2>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; text-align: left;">
                 <div style="background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 4px solid var(--primary-color);">
                     <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">GraphQL Client</h3>
-                    <p style="color: #6c757d;">Full GraphQL support with query/mutation operations and Protocol Buffer mapping</p>
+                    <p style="color: #6c757d;">Full GraphQL support with query/mutation operations, variables, and Protocol Buffer mapping</p>
                 </div>
                 <div style="background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 4px solid var(--secondary-color);">
-                    <h3 style="color: var(--secondary-color); margin-bottom: 0.5rem;">API Key Auth</h3>
-                    <p style="color: #6c757d;">Added API key authentication with custom headers (X-USER-ID, X-API-KEY)</p>
+                    <h3 style="color: var(--secondary-color); margin-bottom: 0.5rem;">API Key Authentication</h3>
+                    <p style="color: #6c757d;">Machine-to-machine auth with custom headers (X-USER-ID, X-API-KEY) for REST and GraphQL</p>
                 </div>
                 <div style="background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 4px solid var(--accent-color);">
-                    <h3 style="color: var(--accent-color); margin-bottom: 0.5rem;">Enhanced Auth System</h3>
-                    <p style="color: #6c757d;">Flexible authentication configuration for REST and GraphQL clients</p>
+                    <h3 style="color: var(--accent-color); margin-bottom: 0.5rem;">Two-Factor Authentication</h3>
+                    <p style="color: #6c757d;">TOTP-based 2FA with QR code setup and verification endpoints</p>
                 </div>
                 <div style="background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 4px solid var(--primary-color);">
-                    <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">Improved Error Handling</h3>
-                    <p style="color: #6c757d;">Better retry logic and timeout handling for network requests</p>
+                    <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">SNI-Based Reverse Proxy</h3>
+                    <p style="color: #6c757d;">Multi-domain, multi-port SSL routing with dynamic certificate selection</p>
                 </div>
             </div>
         </div>
@@ -605,7 +622,7 @@
                     <circle cx="30" cy="30" r="3" fill="#00a8ff"/>
                 </svg>
                 <h3>RESTful API Server</h3>
-                <p>Full HTTP REST server with native Protocol Buffers integration, supporting all standard HTTP methods with automatic serialization.</p>
+                <p>Full HTTP REST server with GET, POST, PUT, PATCH, DELETE support. Native Protocol Buffers integration via protojson with automatic serialization.</p>
             </div>
 
             <div class="feature-card">
@@ -613,8 +630,8 @@
                     <path d="M30 10 L30 50 M15 25 L30 10 L45 25" fill="none" stroke="#00a8ff" stroke-width="2"/>
                     <rect x="20" y="40" width="20" height="10" rx="2" fill="#00d4aa"/>
                 </svg>
-                <h3>Reverse Proxy</h3>
-                <p>Multi-domain reverse proxy with SSL termination, load balancing, WebSocket support, and intelligent request routing.</p>
+                <h3>SNI-Based Reverse Proxy</h3>
+                <p>Multi-domain reverse proxy with TLS Server Name Indication for dynamic certificate selection. Multi-port support (443, 14443, 9092, etc.).</p>
             </div>
 
             <div class="feature-card">
@@ -624,7 +641,7 @@
                     <circle cx="30" cy="30" r="3" fill="#00a8ff"/>
                 </svg>
                 <h3>Service Discovery</h3>
-                <p>Automatic service registration and discovery with Layer 8 integration, enabling seamless distributed communication.</p>
+                <p>Automatic service registration and discovery via Layer 8 VNet integration. Multicast-based endpoint discovery for seamless distributed communication.</p>
             </div>
 
             <div class="feature-card">
@@ -632,8 +649,8 @@
                     <rect x="15" y="15" width="30" height="30" rx="5" fill="none" stroke="#00a8ff" stroke-width="2"/>
                     <path d="M25 25 L35 35 M35 25 L25 35" stroke="#00d4aa" stroke-width="2"/>
                 </svg>
-                <h3>TLS/HTTPS Security</h3>
-                <p>Built-in SSL/TLS with automatic certificate generation, bearer token authentication, and custom CA support.</p>
+                <h3>Multi-Layer Authentication</h3>
+                <p>Bearer token auth with automatic refresh, API key auth (X-USER-ID, X-API-KEY headers), and TOTP-based Two-Factor Authentication with QR setup.</p>
             </div>
 
             <div class="feature-card">
@@ -642,8 +659,8 @@
                     <rect x="35" y="20" width="15" height="20" rx="2" fill="#00d4aa"/>
                     <path d="M25 30 L35 30" stroke="#00a8ff" stroke-width="2"/>
                 </svg>
-                <h3>Plugin System</h3>
-                <p>Dynamic plugin loading with hot-reload capability, enabling extensible service implementations without restarts.</p>
+                <h3>REST Client</h3>
+                <p>Full-featured HTTP/HTTPS client with connection pooling, GZIP compression, retry logic (5 attempts, 5s backoff), and certificate pinning support.</p>
             </div>
 
             <div class="feature-card">
@@ -655,7 +672,7 @@
                     <circle cx="30" cy="35" r="3" fill="#00a8ff"/>
                 </svg>
                 <h3>GraphQL Client</h3>
-                <p>Full-featured GraphQL client with query/mutation support, variable handling, and automatic Protocol Buffer mapping.</p>
+                <p>Full GraphQL client with query/mutation support, variable handling, comprehensive error parsing, and automatic Protocol Buffer response mapping.</p>
             </div>
 
             <div class="feature-card">
@@ -666,8 +683,8 @@
                     <path d="M25 38 L35 38" stroke="#00a8ff" stroke-width="2"/>
                     <path d="M15 15 L45 15" stroke="#00d4aa" stroke-width="2"/>
                 </svg>
-                <h3>API Key Authentication</h3>
-                <p>Support for API key-based authentication with custom headers (X-USER-ID, X-API-KEY) for secure API access.</p>
+                <h3>TLS/HTTPS Security</h3>
+                <p>Built-in SSL/TLS with automatic certificate generation using Layer 8 utilities. Custom CA support and certificate pinning for enhanced security.</p>
             </div>
 
             <div class="feature-card">
@@ -677,8 +694,8 @@
                     <circle cx="30" cy="40" r="5" fill="#00d4aa"/>
                     <path d="M20 20 L30 40 L40 20" fill="none" stroke="#00a8ff" stroke-width="1" opacity="0.5"/>
                 </svg>
-                <h3>Multi-cast Communication</h3>
-                <p>Integration with Layer 8's proximity-based routing for efficient distributed message passing.</p>
+                <h3>Layer 8 Integration</h3>
+                <p>Deep VNic integration for distributed communication. Proximity-based routing, plugin system with hot-reload, and cross-VNet token mapping.</p>
             </div>
         </div>
     </section>
@@ -691,60 +708,68 @@
             <div class="architecture-diagram">
                 <pre>
 Layer 8 Web Services Architecture
-═════════════════════════════════════════════════════
+=================================================================
 
-┌─────────────────────────────────────────────────────┐
-│                   Load Balancer                      │
-│              (Reverse Proxy with SSL)                │
-└─────────────┬───────────────────────┬───────────────┘
-              │                       │
-    ┌─────────▼──────────┐  ┌────────▼──────────┐
-    │   Web Server #1    │  │   Web Server #2    │
-    │  ┌──────────────┐  │  │  ┌──────────────┐  │
-    │  │ REST Handler │  │  │  │ REST Handler │  │
-    │  ├──────────────┤  │  │  ├──────────────┤  │
-    │  │   Plugins    │  │  │  │   Plugins    │  │
-    │  ├──────────────┤  │  │  ├──────────────┤  │
-    │  │ Layer 8 Core │  │  │  │ Layer 8 Core │  │
-    │  └──────────────┘  │  │  └──────────────┘  │
-    └────────────────────┘  └────────────────────┘
-              │                       │
-    ┌─────────▼───────────────────────▼───────────┐
-    │          Layer 8 Network Overlay             │
-    │     (Service Discovery & Message Routing)    │
-    └──────────────────────────────────────────────┘
-              │                       │
-    ┌─────────▼──────────┐  ┌────────▼──────────┐
-    │   REST Client      │  │  GraphQL Client    │
-    │  • Bearer Auth     │  │  • Query/Mutation  │
-    │  • API Key Auth    │  │  • Variables       │
-    │  • Compression     │  │  • Error Handling  │
-    └────────────────────┘  └────────────────────┘
++-------------------------------------------------------------+
+|                  Reverse Proxy (SNI-based)                   |
+|            Multi-domain SSL termination & routing            |
++-------------+-------------------------------+---------------+
+              |                               |
+    +---------v----------+          +--------v----------+
+    |   REST Server      |          |   REST Server      |
+    |  +==============+  |          |  +==============+  |
+    |  | Service      |  |          |  | Service      |  |
+    |  | Handler      |  |          |  | Handler      |  |
+    |  +--------------+  |          |  +--------------+  |
+    |  | Auth Layer   |  |          |  | Auth Layer   |  |
+    |  | Bearer/API/  |  |          |  | Bearer/API/  |  |
+    |  | TFA          |  |          |  | TFA          |  |
+    |  +--------------+  |          |  +--------------+  |
+    |  | WebService   |  |          |  | WebService   |  |
+    |  | Endpoints    |  |          |  | Endpoints    |  |
+    |  +--------------+  |          |  +--------------+  |
+    |  | Layer 8 VNic |  |          |  | Layer 8 VNic |  |
+    |  +==============+  |          |  +==============+  |
+    +--------------------+          +--------------------+
+              |                               |
+    +---------v-------------------------------v-----------+
+    |              Layer 8 Network Overlay                 |
+    |        (Service Discovery & Message Routing)         |
+    +------------------------------------------------------+
+              |                               |
+    +---------v----------+          +--------v----------+
+    |   REST Client      |          |  GraphQL Client    |
+    |  * Bearer Auth     |          |  * Query/Mutation  |
+    |  * API Key Auth    |          |  * Variables       |
+    |  * GZIP Compress   |          |  * Error Handling  |
+    |  * Retry Logic     |          |  * Proto Mapping   |
+    +--------------------+          +--------------------+
 
 Key Components:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-• Reverse Proxy: Multi-domain SSL termination & routing
-• Web Servers: RESTful API with Protocol Buffers
-• REST Client: Full HTTP client with API key & bearer auth
-• GraphQL Client: Query/mutation support with variables
-• Layer 8 Core: Distributed systems integration
-• Plugin System: Dynamic service loading
-• Network Overlay: Proximity-based message routing
+================================================================
+* Reverse Proxy: SNI-based TLS with multi-domain/port routing
+* REST Server: HTTP/HTTPS with Protocol Buffers
+* Service Handler: Request routing via Layer 8 VNet
+* Auth Layer: Bearer tokens, API keys, Two-Factor Auth
+* WebService: /auth, /register, /tfaSetup, /captcha endpoints
+* REST Client: Full HTTP client with retry & compression
+* GraphQL Client: Query/mutation with variables support
+* Layer 8 VNic: Proximity-based distributed communication
                 </pre>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 3rem;">
                 <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
-                    <h3 style="margin-bottom: 1rem;">🚀 High Performance</h3>
-                    <p>Optimized for low latency with connection pooling, efficient serialization, and intelligent caching strategies.</p>
+                    <h3 style="margin-bottom: 1rem;">High Performance</h3>
+                    <p>Connection pooling, GZIP compression, efficient Protocol Buffer serialization, and automatic retry with exponential backoff.</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
-                    <h3 style="margin-bottom: 1rem;">🔐 Enterprise Security</h3>
-                    <p>Multiple authentication layers, certificate pinning, and encrypted communication channels throughout.</p>
+                    <h3 style="margin-bottom: 1rem;">Enterprise Security</h3>
+                    <p>Multi-layer authentication (Bearer, API Key, TFA), certificate pinning, CAPTCHA support, and cross-VNet token mapping.</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
-                    <h3 style="margin-bottom: 1rem;">📊 Scalability</h3>
-                    <p>Horizontal scaling with automatic load balancing and service discovery for seamless expansion.</p>
+                    <h3 style="margin-bottom: 1rem;">Scalability</h3>
+                    <p>Horizontal scaling with automatic service discovery, proximity-based routing, and plugin system with hot-reload capability.</p>
                 </div>
             </div>
         </div>
@@ -759,120 +784,88 @@ Key Components:
 
             <div class="code-tabs">
                 <div class="tab-buttons">
-                    <button class="tab-button active" onclick="showTab('server')">Web Server</button>
+                    <button class="tab-button active" onclick="showTab('server')">REST Server</button>
                     <button class="tab-button" onclick="showTab('client')">REST Client</button>
                     <button class="tab-button" onclick="showTab('graphql')">GraphQL Client</button>
                     <button class="tab-button" onclick="showTab('apikey')">API Key Auth</button>
-                    <button class="tab-button" onclick="showTab('proxy')">Reverse Proxy</button>
+                    <button class="tab-button" onclick="showTab('tfa')">Two-Factor Auth</button>
                     <button class="tab-button" onclick="showTab('service')">Service Registration</button>
                 </div>
 
                 <div id="server" class="tab-content active">
-                    <h3 style="margin-bottom: 1rem;">Creating a Web Server</h3>
+                    <h3 style="margin-bottom: 1rem;">Creating a REST Server</h3>
                     <div class="code-block">
 import (
     "github.com/saichler/l8web/go/web/server"
 )
 
-// Configure the server with enhanced features
+// Configure the server
 config := &server.RestServerConfig{
     Host:           "localhost",
     Port:           8080,
-    Authentication: true,        // Enable auth
-    CertName:       "server",    // Auto-generate SSL cert
+    Authentication: true,        // Enable authentication
+    CertName:       "server",    // Auto-generate SSL cert if missing
     Prefix:         "/api/v1/",
-    DevMode:        true,        // Enable hot-reload
 }
 
-// Create and start the server
+// Create the server
 srv, err := server.NewRestServer(config)
 if err != nil {
     log.Fatal(err)
 }
 
-// Register middleware
-srv.Use(LoggingMiddleware)
-srv.Use(RateLimitMiddleware)
+// Register web services with Layer 8 VNic
+srv.RegisterWebService(webService, vnic)
 
-// Start the server
+// Start the server (blocking)
 go srv.Start()
                     </div>
                 </div>
 
-                <div id="proxy" class="tab-content">
-                    <h3 style="margin-bottom: 1rem;">Setting up Reverse Proxy</h3>
-                    <div class="code-block">
-import (
-    "github.com/saichler/l8web/go/web/proxy"
-)
-
-// Configure multi-domain proxy
-proxyConfig := &proxy.Config{
-    Domains: map[string]proxy.DomainConfig{
-        "api.example.com": {
-            Backend: "http://localhost:8080",
-            SSL:     true,
-            Cache:   true,
-        },
-        "app.example.com": {
-            Backend: "http://localhost:3000",
-            SSL:     true,
-            WSSupport: true,  // WebSocket support
-        },
-    },
-    LoadBalancing: proxy.RoundRobin,
-    HealthCheck:   true,
-}
-
-// Create and start proxy
-proxy, err := proxy.NewProxy(proxyConfig)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Start proxy server
-proxy.ListenAndServe(":443")
-                    </div>
-                </div>
-
                 <div id="client" class="tab-content">
-                    <h3 style="margin-bottom: 1rem;">Creating a REST Client</h3>
+                    <h3 style="margin-bottom: 1rem;">REST Client with Bearer Token</h3>
                     <div class="code-block">
 import (
     "github.com/saichler/l8web/go/web/client"
 )
 
-// Configure the REST client with advanced features
+// Configure client with bearer token authentication
 config := &client.RestClientConfig{
-    Host:          "api.example.com",
-    Port:          443,
+    Host:          "localhost",
+    Port:          8080,
     Https:         true,
     CertFileName:  "ca.crt",
     TokenRequired: true,
-    Token:         "Bearer " + getAuthToken(),
     Prefix:        "/api/v1/",
+    AuthInfo: &client.RestAuthInfo{
+        NeedAuth:   true,
+        BodyType:   "AuthRequest",
+        UserField:  "username",
+        PassField:  "password",
+        RespType:   "AuthResponse",
+        TokenField: "token",
+        AuthPath:   "/auth",
+    },
 }
 
-// Create the client with connection pooling
+// Create the client
 restClient, err := client.NewRestClient(config, resources)
 if err != nil {
     log.Fatal(err)
 }
 
-// Make GET request
+// Authenticate (obtains and stores bearer token)
+err = restClient.Auth("myuser", "mypassword")
+
+// Make authenticated requests
 response, err := restClient.GET("/users", "UserList", "", "", nil)
-
-// Make POST request with body
-user := &User{Name: "John", Email: "john@example.com"}
-response, err = restClient.POST("/users", "User", "", "", user)
-
-// Make DELETE request
+response, err = restClient.POST("/users", "User", "", "", newUser)
 response, err = restClient.DELETE("/users/123", "", "", "", nil)
                     </div>
                 </div>
 
                 <div id="graphql" class="tab-content">
-                    <h3 style="margin-bottom: 1rem;">Using GraphQL Client</h3>
+                    <h3 style="margin-bottom: 1rem;">GraphQL Client Usage</h3>
                     <div class="code-block">
 import (
     "github.com/saichler/l8web/go/web/gclient"
@@ -884,32 +877,28 @@ config := &gclient.GraphQLClientConfig{
     Port:     443,
     Https:    true,
     Endpoint: "/graphql",
-    Token:    "Bearer " + getAuthToken(),
+    AuthInfo: &gclient.GraphQLAuthInfo{
+        IsAPIKey: true,
+        ApiUser:  "app-client-001",
+        ApiKey:   "sk-1234567890abcdef",
+    },
 }
 
 // Create the client
 gqlClient, err := gclient.NewGraphQLClient(config, resources)
-if err != nil {
-    log.Fatal(err)
-}
 
-// Execute a GraphQL query
+// Execute a GraphQL query with variables
 query := `
     query GetUser($id: ID!) {
         user(id: $id) {
             id
             name
             email
-            posts {
-                title
-                content
-            }
+            posts { title content }
         }
     }
 `
-variables := map[string]interface{}{
-    "id": "user123",
-}
+variables := map[string]interface{}{"id": "user123"}
 response, err := gqlClient.Query(query, variables, "UserResponse", "user")
 
 // Execute a GraphQL mutation
@@ -924,8 +913,8 @@ mutation := `
 `
 variables = map[string]interface{}{
     "input": map[string]interface{}{
-        "title": "New Post",
-        "content": "Post content",
+        "title":    "New Post",
+        "content":  "Post content here",
         "authorId": "user123",
     },
 }
@@ -948,13 +937,13 @@ restConfig := &client.RestClientConfig{
     Https: true,
     AuthInfo: &client.RestAuthInfo{
         IsAPIKey: true,
-        ApiUser:  "app-client-001",
-        ApiKey:   "sk-1234567890abcdef",
+        ApiUser:  "app-client-001",      // Sent as X-USER-ID header
+        ApiKey:   "sk-1234567890abcdef", // Sent as X-API-KEY header
     },
 }
 
 restClient, err := client.NewRestClient(restConfig, resources)
-// Headers automatically include:
+// All requests automatically include API key headers:
 // X-USER-ID: app-client-001
 // X-API-KEY: sk-1234567890abcdef
 
@@ -972,27 +961,56 @@ gqlConfig := &gclient.GraphQLClientConfig{
 }
 
 gqlClient, err := gclient.NewGraphQLClient(gqlConfig, resources)
-// Both clients now use API key authentication
 
 // Make authenticated requests
 response, err := restClient.GET("/protected/data", "DataResponse", "", "", nil)
                     </div>
                 </div>
 
-                <div id="service" class="tab-content">
-                    <h3 style="margin-bottom: 1rem;">Service Registration & Discovery</h3>
+                <div id="tfa" class="tab-content">
+                    <h3 style="margin-bottom: 1rem;">Two-Factor Authentication Flow</h3>
                     <div class="code-block">
-// Register a web service handler
+// Built-in WebService endpoints for Two-Factor Authentication
+
+// 1. Setup TFA (returns QR code URL and secret)
+POST /tfaSetup
+Headers: Authorization: Bearer {token}
+Response: {
+    "qrCodeUrl": "otpauth://totp/...",
+    "secret": "BASE32SECRET"
+}
+
+// 2. Verify TFA setup with TOTP code from authenticator app
+POST /tfaSetupVerify
+Headers: Authorization: Bearer {token}
+Body: { "code": "123456" }
+Response: { "success": true }
+
+// 3. Login with TFA enabled
+POST /auth
+Body: {
+    "username": "user@example.com",
+    "password": "password123",
+    "tfaCode": "123456"  // From authenticator app
+}
+Response: { "token": "bearer-token-here" }
+
+// Additional built-in endpoints:
+// GET  /captcha   - Get CAPTCHA challenge for registration
+// POST /register  - Register new user with CAPTCHA verification
+// GET  /registry  - Access type registry information
+                    </div>
+                </div>
+
+                <div id="service" class="tab-content">
+                    <h3 style="margin-bottom: 1rem;">Service Registration with Layer 8</h3>
+                    <div class="code-block">
+// Register a web service handler type with Layer 8
 webNic.Resources().Services().RegisterServiceHandlerType(
-    &server.WebService{
-        Name:        "UserService",
-        Version:     "1.0.0",
-        Endpoints:   []string{"/users", "/auth"},
-        HealthCheck: "/health",
-    },
+    &server.WebService{},
 )
 
-// Activate the web service with auto-discovery
+// Activate the web service
 service, err := webNic.Resources().Services().Activate(
     server.ServiceTypeName,
     ifs.WebService,
@@ -1002,15 +1020,24 @@ service, err := webNic.Resources().Services().Activate(
     srv,
 )
 
-// Service is now discoverable via Layer 8
-log.Printf("Service registered: %s at %s",
-    service.Name(), service.Endpoint())
+if err != nil {
+    log.Fatal(err)
+}
 
-// Discover other services
+// Service is now discoverable via Layer 8 VNet
+log.Printf("Service registered: %s at port %d",
+    service.ServiceName(), service.Port())
+
+// Discover other services in the network
 services := webNic.DiscoverServices("UserService")
 for _, svc := range services {
-    log.Printf("Found service: %s", svc.Endpoint())
+    log.Printf("Found service: %s at %s", svc.ServiceName(), svc.Endpoint())
 }
+
+// Token extraction priority on server:
+// 1. Authorization header: "Bearer {token}"
+// 2. Cookie: "bToken" cookie value
+// 3. Query parameter: "?token={token}"
                     </div>
                 </div>
             </div>
@@ -1024,7 +1051,7 @@ for _, svc := range services {
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
                 <div class="feature-card">
-                    <h3>📦 Installation</h3>
+                    <h3>Installation</h3>
                     <div class="code-block" style="margin-top: 1rem;">
 go get github.com/saichler/l8web/go
 
@@ -1034,70 +1061,67 @@ go mod download
                 </div>
 
                 <div class="feature-card">
-                    <h3>🧪 Testing</h3>
+                    <h3>Testing</h3>
                     <div class="code-block" style="margin-top: 1rem;">
 # Run full test suite
-./test.sh
+./go/test.sh
 
 # Run with coverage
-go test -coverprofile=cover.out ./...
-go tool cover -html=cover.out
+cd go
+go test -v -coverprofile=cover.html ./...
+go tool cover -html=cover.html
                     </div>
                 </div>
 
                 <div class="feature-card">
-                    <h3>🚀 Quick Deploy</h3>
+                    <h3>Proxy Deployment</h3>
                     <div class="code-block" style="margin-top: 1rem;">
-# Build the server
-go build -o l8web cmd/server/main.go
+# Build the reverse proxy
+cd go/web/proxy
+go build -o l8proxy main/main.go
 
-# Run with config
-./l8web --config server.yaml
+# Run (requires root for port 443)
+sudo ./l8proxy
 
-# Docker deployment
-docker build -t l8web .
-docker run -p 8080:8080 l8web
+# Or use the build script for Docker
+./build.sh
                     </div>
                 </div>
 
                 <div class="feature-card">
-                    <h3>📋 Requirements</h3>
+                    <h3>Requirements</h3>
                     <ul style="margin-top: 1rem; padding-left: 1.5rem;">
-                        <li>Go 1.23.8 or higher</li>
+                        <li>Go 1.25.4 or higher</li>
                         <li>Layer 8 Framework Core</li>
                         <li>Protocol Buffers 3.0+</li>
-                        <li>Docker (optional)</li>
+                        <li>Docker (optional for proxy)</li>
                         <li>SSL certificates (auto-generated if not provided)</li>
                     </ul>
                 </div>
 
                 <div class="feature-card">
-                    <h3>🔧 Configuration</h3>
-                    <div class="code-block" style="margin-top: 1rem;">
-# server.yaml
-server:
-  host: 0.0.0.0
-  port: 8080
-  ssl:
-    enabled: true
-    cert: server.crt
-    key: server.key
-  auth:
-    enabled: true
-    token_expiry: 24h
-  layer8:
-    discovery: true
-    multicast: true
+                    <h3>Project Structure</h3>
+                    <div class="code-block" style="margin-top: 1rem; font-size: 0.8rem;">
+l8web/
++-- go/
+|   +-- web/
+|   |   +-- server/    # REST Server
+|   |   +-- client/    # REST Client
+|   |   +-- gclient/   # GraphQL Client
+|   |   +-- proxy/     # Reverse Proxy
+|   +-- tests/         # Test Suite
++-- web.html           # This page
++-- README.md          # Documentation
                     </div>
                 </div>
 
                 <div class="feature-card">
-                    <h3>📚 Documentation</h3>
+                    <h3>Documentation</h3>
                     <div style="margin-top: 1rem;">
                         <p>Full documentation available at:</p>
                         <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                            <li><a href="https://github.com/saichler/l8web/wiki" style="color: var(--primary-color);">Project Wiki</a></li>
-                            <li><a href="https://github.com/saichler/l8web/tree/main/docs" style="color: var(--primary-color);">API Reference</a></li>
+                            <li><a href="https://github.com/saichler/l8web" style="color: var(--primary-color);">GitHub Repository</a></li>
+                            <li><a href="https://github.com/saichler/l8web/blob/main/README.md" style="color: var(--primary-color);">README Documentation</a></li>
                             <li><a href="https://github.com/saichler/layer8" style="color: var(--primary-color);">Layer 8 Core Docs</a></li>
                         </ul>
                     </div>
@@ -1125,7 +1149,8 @@ server:
             <a href="#docs">Documentation</a>
             <a href="#architecture">Architecture</a>
         </div>
-        <p style="margin-bottom: 0.5rem;">© 2025 Layer 8 Web Services - Licensed under the Apache License, Version 2.0</p>
+        <p style="margin-bottom: 0.5rem;">Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)</p>
+        <p style="margin-bottom: 0.5rem;">Licensed under the Apache License, Version 2.0</p>
         <p style="opacity: 0.8;">Part of the Layer 8 Framework Ecosystem</p>
     </footer>
 

@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2025 Sharon Aicler (saichler@gmail.com)
+ *
+ * Layer 8 Ecosystem is licensed under the Apache License, Version 2.0.
+ * You may obtain a copy of the License at:
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package proxy provides an SNI-based TLS reverse proxy for the Layer 8 ecosystem.
+// It supports multi-domain, multi-port routing with automatic TLS certificate selection
+// based on the Server Name Indication (SNI) in the TLS handshake.
+//
+// Features:
+//   - SNI-based certificate selection for multi-domain hosting
+//   - Multi-port listening (443, 14443, 9092, 9094, etc.)
+//   - Per-route SSL certificate configuration
+//   - Environment-based backend host configuration (NODE_IP)
+//   - Fallback domain matching for unmatched routes
+//
+// Default route configuration:
+//   - Port 443: layer8vibe.dev->1443, probler.dev->2443, layer-8.dev->4443
+//   - Port 14443: probler.dev->13443
+//   - Port 9092: probler.dev->9093
+//   - Port 9094: probler.dev->9095
 package proxy
 
 import (
@@ -11,22 +42,31 @@ import (
 	"strings"
 )
 
+// ProxyConfig holds the complete configuration for the reverse proxy,
+// including all listeners and their routing rules.
 type ProxyConfig struct {
-	Listeners []ListenerConfig
+	Listeners []ListenerConfig // List of port listeners to start
 }
 
+// ListenerConfig defines a single port listener with its routing rules.
+// Each listener can have multiple routes for different domains.
 type ListenerConfig struct {
-	ListenPort string
-	Routes     []RouteConfig
+	ListenPort string        // Port to listen on (e.g., ":443", ":14443")
+	Routes     []RouteConfig // Routing rules for this listener
 }
 
+// RouteConfig defines a single routing rule that maps domains to a backend port.
+// Each route has its own SSL certificate for TLS termination.
 type RouteConfig struct {
-	Domains    []string
-	TargetPort string
-	CertFile   string
-	KeyFile    string
+	Domains    []string // Domain names to match (e.g., ["www.example.com", "example.com"])
+	TargetPort string   // Backend port to proxy to (e.g., "1443")
+	CertFile   string   // Path to SSL certificate file
+	KeyFile    string   // Path to SSL private key file
 }
 
+// NewReverseProxy creates a ProxyConfig with the default Layer 8 routing configuration.
+// This includes listeners for ports 443, 14443, 9092, and 9094 with routes to
+// layer8vibe.dev, probler.dev, and layer-8.dev domains.
 func NewReverseProxy() *ProxyConfig {
 	return &ProxyConfig{
 		Listeners: []ListenerConfig{
@@ -90,6 +130,9 @@ func NewReverseProxy() *ProxyConfig {
 	}
 }
 
+// Start begins all configured listeners in separate goroutines.
+// It blocks until one of the listeners returns an error, then returns that error.
+// Each listener runs in its own goroutine for concurrent multi-port operation.
 func (pc *ProxyConfig) Start() error {
 	errChan := make(chan error, len(pc.Listeners))
 
@@ -105,6 +148,14 @@ func (pc *ProxyConfig) Start() error {
 	return <-errChan
 }
 
+// startListener initializes and starts a single port listener.
+// It creates reverse proxy handlers for each route, sets up SNI-based certificate
+// selection, and starts the HTTPS server. The backend host is determined by the
+// NODE_IP environment variable (defaults to "localhost").
+//
+// The function sets up two types of handlers:
+// 1. Domain-specific pattern handlers (e.g., "example.com/")
+// 2. A fallback root handler ("/") that matches domains by Host header
 func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 	mux := http.NewServeMux()
 
@@ -199,6 +250,12 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 	return server.ListenAndServeTLS("", "")
 }
 
+// getCertificateForListener implements SNI-based certificate selection.
+// It searches the listener's routes for a matching domain and returns the
+// corresponding certificate. If no match is found, it falls back to the
+// first route's certificate (for domain aliases or misconfigured clients).
+//
+// This function is called during the TLS handshake via tls.Config.GetCertificate.
 func (pc *ProxyConfig) getCertificateForListener(info *tls.ClientHelloInfo, listener ListenerConfig) (*tls.Certificate, error) {
 	host := strings.ToLower(info.ServerName)
 
@@ -227,6 +284,9 @@ func (pc *ProxyConfig) getCertificateForListener(info *tls.ClientHelloInfo, list
 	return nil, fmt.Errorf("no certificate found for host: %s", host)
 }
 
+// Run creates a new reverse proxy with default configuration and starts it.
+// This is the main entry point for running the proxy as a standalone service.
+// It blocks until an error occurs and calls log.Fatal on failure.
 func Run() {
 	proxy := NewReverseProxy()
 	if err := proxy.Start(); err != nil {
