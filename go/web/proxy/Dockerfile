@@ -13,5 +13,6 @@ COPY --from=build /home/src/github.com/saichler/build/reverse-proxy /home/run/re
 COPY layer8vibe.dev /home/run/layer8vibe.dev
 COPY probler.dev /home/run/probler.dev
 COPY layer-8.dev /home/run/layer-8.dev
+COPY layer8-book.help /home/run/layer-8.dev
 
 ENTRYPOINT ["/home/run/reverse-proxy"]

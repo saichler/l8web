@@ -91,6 +91,12 @@ func NewReverseProxy() *ProxyConfig {
 						CertFile:   "layer-8.dev/domain.cert.pem",
 						KeyFile:    "layer-8.dev/private.key.pem",
 					},
+					{
+						Domains:    []string{"www.layer8-book.help", "layer8-book.help"},
+						TargetPort: "3773",
+						CertFile:   "layer8-book.help/domain.cert.pem",
+						KeyFile:    "layer8-book.help/private.key.pem",
+					},
 				},
 			},
 			{
