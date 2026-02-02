@@ -21,6 +21,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/saichler/l8types/go/types/l8services"
 	"io"
 	"net/http"
 	"reflect"
@@ -175,6 +176,17 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(elems.Error().Error())
 		return
 	}
+
+	trans, ok := elems.Element().(*l8services.L8Transaction)
+	if ok && trans.ErrMsg != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Validation Error"))
+		w.Write([]byte(trans.ErrMsg))
+		fmt.Println("Validation Error")
+		fmt.Println(trans.ErrMsg)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response, e := elems.AsList(this.vnic.Resources().Registry())
 	if e != nil {
