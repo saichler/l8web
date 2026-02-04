@@ -99,7 +99,7 @@ func NewReverseProxy() *ProxyConfig {
 					},
 					{
 						Domains:    []string{"www.l8erp.one", "l8erp.one"},
-						TargetPort: "2883",
+						TargetPort: "7773",
 						CertFile:   "l8erp.one/domain.cert.pem",
 						KeyFile:    "l8erp.one/private.key.pem",
 					},
