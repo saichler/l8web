@@ -147,6 +147,19 @@ func (this *RestServer) Start() error {
 	return err
 }
 
+// RegisterHandler registers a custom HTTP handler at the given path,
+// prefixed with the server's URL prefix. Use this for webhook endpoints
+// and other custom handlers that don't follow the service area/name pattern.
+func (this *RestServer) RegisterHandler(path string, handler http.Handler) {
+	fullPath := this.Prefix + path
+	_, ok := endPoints.Get(fullPath)
+	if !ok {
+		endPoints.Put(fullPath, true)
+		fmt.Println("Registering path=", fullPath)
+		http.DefaultServeMux.Handle(fullPath, handler)
+	}
+}
+
 // Stop gracefully shuts down the server and cleans up registered endpoints.
 // It uses the RestServer itself as the context for shutdown coordination.
 func (this *RestServer) Stop() {
