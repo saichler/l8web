@@ -21,6 +21,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/saichler/l8types/go/types/l8health"
 	"github.com/saichler/l8types/go/types/l8services"
 	"io"
 	"net/http"
@@ -152,8 +153,14 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 
 	dest := this.vnic.Resources().SysConfig().RemoteUuid
 	if this.serviceName == health.ServiceName {
-		this.vnic.Resources().Logger().Info("Sending to vnet")
-		elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, Timeout)
+		h, ok := body.(*l8health.L8Health)
+		if ok {
+			this.vnic.Resources().Logger().Info("Sending to destination ", h.Alias, " - ", h.AUuid)
+			elems = this.vnic.Request(h.AUuid, this.serviceName, this.serviceArea, action, body, Timeout)
+		} else {
+			this.vnic.Resources().Logger().Info("Sending to vnet")
+			elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, Timeout)
+		}
 	} else {
 		if Target != "" {
 			elems = this.vnic.Request(Target, this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
