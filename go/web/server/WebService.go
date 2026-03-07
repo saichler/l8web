@@ -56,9 +56,9 @@ const (
 // management. It handles service activation, HTTP endpoint registration, and
 // cross-VNet authentication token mapping.
 type WebService struct {
-	server    ifs.IWebServer   // The REST server instance
-	vnic      ifs.IVNic        // Primary VNic for service communication
-	adjacents []ifs.IResources // Adjacent VNet resources for cross-network auth
+	server    ifs.IWebServer // The REST server instance
+	vnic      ifs.IVNic      // Primary VNic for service communication
+	adjacents []ifs.IVNic    // Adjacent VNet Vnic for cross-network auth
 }
 
 // mtx provides thread-safe access to shared registration state.
@@ -120,9 +120,9 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 			_, ok = registered[nic.Resources().SysConfig().VnetPort]
 			if !ok {
 				if this.adjacents == nil {
-					this.adjacents = make([]ifs.IResources, 0)
+					this.adjacents = make([]ifs.IVNic, 0)
 				}
-				this.adjacents = append(this.adjacents, nic.Resources())
+				this.adjacents = append(this.adjacents, nic)
 				registered[nic.Resources().SysConfig().VnetPort] = true
 				go func() {
 					time.Sleep(time.Second * 5)
@@ -157,7 +157,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read user/pass #2")
 		return
 	}
-	token, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass)
+	token, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
@@ -172,7 +172,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
 		for _, adjacent := range this.adjacents {
-			aToken, _, _, aErr := adjacent.Security().Authenticate(user.User, user.Pass)
+			aToken, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
 			if aErr == nil {
 				mtx.Lock()
 				adjacentTokens[token] = aToken
@@ -275,7 +275,7 @@ func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		_, ok := this.vnic.Resources().Security().ValidateToken(bearer)
+		_, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -301,7 +301,7 @@ func (this *WebService) ValidateBearerToken(r *http.Request) error {
 		fmt.Println("Bearer is empty")
 		return errors.New("unauthorized")
 	}
-	_, ok := this.vnic.Resources().Security().ValidateToken(bearer)
+	_, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
 	if !ok {
 		return errors.New("unauthorized")
 	}

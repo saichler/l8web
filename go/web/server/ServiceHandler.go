@@ -95,7 +95,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		id, ok := this.vnic.Resources().Security().ValidateToken(bearer)
+		id, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
 		aToken := ""
 		if !ok && (id == "Token Setup TFA" || id == "Token Need TFA Verification") {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -113,7 +113,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			mtx.Unlock()
 
 			if aToken != "" {
-				id, ok = this.vnic.Resources().Security().ValidateToken(aToken)
+				id, ok = this.vnic.Resources().Security().ValidateToken(aToken, this.vnic)
 			}
 		}
 		if !ok {
