@@ -74,7 +74,13 @@ func (this *WebService) TFAVerify(w http.ResponseWriter, r *http.Request) {
 	if !bodyToProto(w, r, "POST", body) {
 		return
 	}
-	err := this.vnic.Resources().Security().TFAVerify(body.UserId, body.Code, body.Bearer, this.vnic)
+	authtoken, ok := this.faTokens.Load(body.Hash)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("unauthorized, invalid hash"))
+	}
+	token := authtoken.(*faTokenHash).authToken.Token
+	err := this.vnic.Resources().Security().TFAVerify(body.UserId, body.Code, token, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(err.Error()))
