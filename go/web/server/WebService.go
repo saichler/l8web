@@ -213,6 +213,9 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	authToken.SetupTfa = setupTFA
 	authToken.TokenHash = faHash
 
+	fmt.Println("Need TFA:", needTFA)
+	fmt.Println("Need Setup TFA:", setupTFA)
+
 	if needTFA {
 		fa := &faTokenHash{authToken: authToken, hash: faHash}
 		this.faTokens.Store(user.User, fa)
