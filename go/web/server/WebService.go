@@ -190,7 +190,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		authToken.Error = err.Error()
 		jsn, _ := protojson.Marshal(authToken)
 		w.Write(jsn)
-		fmt.Println("Failed to authenticate user/pass #3")
+		this.vnic.Resources().Logger().Warning("Failed to authenticate user/pass #3")
 		return
 	}
 
@@ -212,9 +212,6 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	authToken.NeedTfa = needTFA
 	authToken.SetupTfa = setupTFA
 	authToken.TokenHash = faHash
-
-	fmt.Println("Need TFA:", needTFA)
-	fmt.Println("Need Setup TFA:", setupTFA)
 
 	if needTFA {
 		fa := &faTokenHash{authToken: authToken, hash: faHash}
@@ -343,7 +340,6 @@ func (this *WebService) ValidateBearerToken(r *http.Request) error {
 		bearer = extractToken(r)
 	}
 	if bearer == "" {
-		fmt.Println("Bearer is empty")
 		return errors.New("unauthorized")
 	}
 	_, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
