@@ -59,6 +59,12 @@ type WebService struct {
 	server    ifs.IWebServer // The REST server instance
 	vnic      ifs.IVNic      // Primary VNic for service communication
 	adjacents []ifs.IVNic    // Adjacent VNet Vnic for cross-network auth
+	faTokens  *sync.Map
+}
+
+type faTokenHash struct {
+	authToken *l8api.AuthToken
+	hash      string
 }
 
 // mtx provides thread-safe access to shared registration state.
@@ -85,6 +91,7 @@ var proxyMode = false
 // registered as adjacent networks for cross-VNet authentication.
 func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
 	this.vnic = vnic
+	this.faTokens = &sync.Map{}
 	vnic.Resources().Registry().Register(&l8web.L8WebService{})
 	this.server = sla.Args()[0].(ifs.IWebServer)
 	go func() {
@@ -157,7 +164,26 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to read user/pass #2")
 		return
 	}
-	token, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
+
+	pending, ok := this.faTokens.Load(user.User)
+	if ok {
+		this.faTokens.Delete(user.User)
+		faPending := pending.(*faTokenHash)
+		if faPending.authToken.TokenHash != user.TokenHash {
+			w.WriteHeader(http.StatusUnauthorized)
+			authToken := &l8api.AuthToken{}
+			authToken.Error = err.Error()
+			jsn, _ := protojson.Marshal(authToken)
+			w.Write(jsn)
+			fmt.Println("Failed to authenticate hash #4")
+			return
+		}
+		jsn, _ := protojson.Marshal(faPending.authToken)
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsn)
+	}
+
+	token, faHash, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
@@ -172,7 +198,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
 		for _, adjacent := range this.adjacents {
-			aToken, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
+			aToken, _, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
 			if aErr == nil {
 				mtx.Lock()
 				adjacentTokens[token] = aToken
@@ -185,6 +211,22 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	authToken.Token = token
 	authToken.NeedTfa = needTFA
 	authToken.SetupTfa = setupTFA
+	authToken.TokenHash = faHash
+
+	if needTFA {
+		fa := &faTokenHash{authToken: authToken, hash: faHash}
+		this.faTokens.Store(user.User, fa)
+
+		faToken := &l8api.AuthToken{}
+		faToken.NeedTfa = needTFA
+		faToken.SetupTfa = setupTFA
+		faToken.TokenHash = faHash
+		jsn, _ := protojson.Marshal(faToken)
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsn)
+		return
+	}
+
 	jsn, _ := protojson.Marshal(authToken)
 	http.SetCookie(w, &http.Cookie{
 		Name:     BearerCookieName,
