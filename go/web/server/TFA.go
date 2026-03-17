@@ -80,6 +80,7 @@ func (this *WebService) TFAVerify(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("unauthorized, invalid hash"))
 		return
 	}
+	this.faTokens.Delete(body.UserId)
 	token := authtoken.(*faTokenHash).authToken.Token
 	err := this.vnic.Resources().Security().TFAVerify(body.UserId, body.Code, token, this.vnic)
 	if err != nil {

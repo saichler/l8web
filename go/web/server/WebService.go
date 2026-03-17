@@ -172,7 +172,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		if faPending.authToken.TokenHash != user.TokenHash {
 			w.WriteHeader(http.StatusUnauthorized)
 			authToken := &l8api.AuthToken{}
-			authToken.Error = err.Error()
+			authToken.Error = "Mismatch Hash"
 			jsn, _ := protojson.Marshal(authToken)
 			w.Write(jsn)
 			fmt.Println("Failed to authenticate hash #4")
