@@ -1,26 +1,10 @@
 # Layer 8 Web Services
 
-Advanced Web Server, Client & Reverse Proxy for the Layer 8 Framework
+Advanced Web Server, Client, Webhook & Reverse Proxy for the Layer 8 Framework
 
 ## Overview
 
-**Layer 8 Web Services** (l8web) is a comprehensive Go-based web infrastructure library designed specifically for the Layer 8 distributed systems framework. It provides RESTful HTTP and GraphQL endpoints, reverse proxy capabilities, and client libraries that seamlessly integrate with the Layer 8 network overlay, enabling secure web-based access to distributed services.
-
-## Recent Updates (2025)
-
-### Latest Features
-- **GraphQL Client Support**: Full-featured GraphQL client with query/mutation operations and Protocol Buffer mapping
-- **API Key Authentication**: Support for API key-based authentication via custom headers (X-USER-ID, X-API-KEY)
-- **Two-Factor Authentication (TFA)**: TOTP-based two-factor authentication with QR code setup
-- **Enhanced Authentication System**: Flexible authentication configuration for both REST and GraphQL clients
-- **User Registration with CAPTCHA**: Built-in user registration flow with CAPTCHA verification
-
-### Recent Improvements
-- Fixed loading sequence issues
-- Enhanced REST client authentication flow with automatic token refresh
-- Added support for multiple authentication methods (Bearer, API Key, TFA)
-- Improved proxy configuration with multi-port SNI-based routing
-- Better retry logic and timeout handling for network requests
+**Layer 8 Web Services** (l8web) is a comprehensive Go-based web infrastructure library designed specifically for the Layer 8 distributed systems framework. It provides RESTful HTTP and GraphQL endpoints, webhook handling, reverse proxy capabilities, and client libraries that seamlessly integrate with the Layer 8 network overlay, enabling secure web-based access to distributed services.
 
 ## Features
 
@@ -34,10 +18,18 @@ Advanced Web Server, Client & Reverse Proxy for the Layer 8 Framework
 - **Multi-cast Communication**: Integration with Layer 8's proximity-based routing
 - **Web UI Serving**: Dynamic file serving with SPA support and directory-level routing
 
+### Webhook Handler
+- **Provider Interface**: Pluggable webhook provider system for different VCS platforms
+- **GitHub Provider**: Event detection via `X-GitHub-Event` header, HMAC-SHA256 signature verification via `X-Hub-Signature-256`
+- **GitLab Provider**: Event detection via `X-Gitlab-Event` header, secret token verification via `X-Gitlab-Token`
+- **Signature Verification**: HMAC-SHA256 signature validation for payload integrity
+- **Issue Reference Extraction**: Parses commit messages for issue refs (`Fixes #42`, `Closes L8B-123`, `Resolves <uuid>`)
+- **POST-Only Enforcement**: Rejects non-POST requests automatically
+
 ### Reverse Proxy
 - **SNI-Based Routing**: TLS Server Name Indication for multi-domain certificate selection
-- **Multi-Domain Support**: Handle multiple domains with per-domain configuration
-- **Multi-Port Support**: Route traffic on multiple ports (443, 14443, 9092, 9094, etc.)
+- **Multi-Domain Support**: Handle multiple domains with per-domain configuration (layer8vibe.dev, probler.dev, layer-8.dev, layer8-book.help, l8erp.one)
+- **Multi-Port Support**: Route traffic on multiple ports (443, 14443, 9092, 9094, 5444, 3114, 2883)
 - **SSL Termination**: Automatic SSL certificate management for proxied domains
 - **WebSocket Support**: Full WebSocket protocol proxying via Go's http.ReverseProxy
 - **Environment Configuration**: NODE_IP environment variable support for dynamic backend routing
@@ -76,8 +68,8 @@ Advanced Web Server, Client & Reverse Proxy for the Layer 8 Framework
     │  │ Auth Layer   │  │          │  │ Auth Layer   │  │
     │  │ (Bearer/API) │  │          │  │ (Bearer/API) │  │
     │  ├──────────────┤  │          │  ├──────────────┤  │
-    │  │ WebService   │  │          │  │ WebService   │  │
-    │  │ (TFA, Reg)   │  │          │  │ (TFA, Reg)   │  │
+    │  │ Webhook      │  │          │  │ WebService   │  │
+    │  │ Handler      │  │          │  │ (TFA, Reg)   │  │
     │  ├──────────────┤  │          │  ├──────────────┤  │
     │  │ Layer 8 VNic │  │          │  │ Layer 8 VNic │  │
     │  └──────────────┘  │          │  └──────────────┘  │
@@ -101,40 +93,53 @@ Advanced Web Server, Client & Reverse Proxy for the Layer 8 Framework
 
 ```
 l8web/
-├── README.md                           # Main documentation
-├── web.html                            # Project website
+├── README.md
 ├── go/
-│   ├── go.mod                          # Go module definition
+│   ├── go.mod                          # Go module (Go 1.26.1)
 │   ├── test.sh                         # Test runner script
 │   ├── web/
 │   │   ├── server/                     # REST Server implementation
 │   │   │   ├── RestServer.go           # Core HTTP/HTTPS server
 │   │   │   ├── ServiceHandler.go       # HTTP request handler with routing
 │   │   │   ├── WebService.go           # Service manager (auth, TFA, registration)
-│   │   │   ├── LoadWebUI.go            # Web UI file serving
+│   │   │   ├── LoadWebUI.go            # Web UI file serving with SPA support
 │   │   │   ├── CoockieToken.go         # Token extraction (header/cookie/query)
-│   │   │   ├── TFA.go                  # Two-Factor Authentication
+│   │   │   ├── TFA.go                  # Two-Factor Authentication (TOTP)
 │   │   │   └── BodyToProto.go          # HTTP body to Protocol Buffer parsing
 │   │   ├── client/                     # REST Client implementation
 │   │   │   └── RestClient.go           # REST client with auth & retry
 │   │   ├── gclient/                    # GraphQL Client
 │   │   │   └── GraphQLClient.go        # GraphQL client implementation
+│   │   ├── webhook/                    # Webhook handling
+│   │   │   ├── webhook.go              # Core handler, Provider interface, EventHandler
+│   │   │   ├── signature.go            # HMAC-SHA256 signature verification
+│   │   │   ├── refs.go                 # Issue reference extraction from commit messages
+│   │   │   ├── github/                 # GitHub webhook provider
+│   │   │   │   └── github.go           # X-GitHub-Event, X-Hub-Signature-256 support
+│   │   │   └── gitlab/                 # GitLab webhook provider
+│   │   │       └── gitlab.go           # X-Gitlab-Event, X-Gitlab-Token support
 │   │   └── proxy/                      # Reverse Proxy
-│   │       ├── reverse_proxy.go        # SNI-based routing proxy
+│   │       ├── reverse_proxy.go        # SNI-based multi-domain routing proxy
 │   │       ├── main/main.go            # Proxy executable entry point
 │   │       ├── proxy.yaml              # Kubernetes DaemonSet config
+│   │       ├── build.sh                # Docker build script
+│   │       ├── Dockerfile              # Multi-stage Docker build
 │   │       └── README.md               # Proxy documentation
 │   └── tests/                          # Test suite
 │       ├── TestRestServer_test.go      # REST server tests
 │       ├── TestAuth_test.go            # Authentication tests
 │       ├── TestWeb_test.go             # Web integration tests
+│       ├── TestWebhook_test.go         # Webhook handler tests
+│       ├── TestGitHub_test.go          # GitHub webhook provider tests
+│       ├── TestSignature_test.go       # Signature verification tests
+│       ├── TestRefs_test.go            # Issue reference extraction tests
 │       ├── TestUtils.go                # Test utilities
 │       └── TestInit.go                 # Test initialization
 ```
 
 ## Dependencies
 
-- **Go 1.25.4+**
+- **Go 1.26.1+**
 - **Protocol Buffers 3.0+** - google.golang.org/protobuf
 - **Layer 8 Framework** - Core distributed systems framework
 
@@ -143,7 +148,8 @@ l8web/
 - `github.com/saichler/l8types` - Type definitions and interfaces
 - `github.com/saichler/l8utils` - Utility functions (certs, IP, maps)
 - `github.com/saichler/l8srlz` - Serialization utilities
-- `github.com/saichler/l8services` - Service management
+- `github.com/saichler/l8services` - Service management (indirect)
+- `github.com/saichler/l8test` - Testing infrastructure
 
 ## Installation
 
@@ -280,10 +286,6 @@ query := `
             id
             name
             email
-            posts {
-                title
-                content
-            }
         }
     }
 `
@@ -298,18 +300,58 @@ mutation := `
         createPost(input: $input) {
             id
             title
-            createdAt
         }
     }
 `
 variables = map[string]interface{}{
     "input": map[string]interface{}{
-        "title":    "New Post",
-        "content":  "Post content here",
-        "authorId": "user123",
+        "title":   "New Post",
+        "content": "Post content here",
     },
 }
 response, err = gqlClient.Mutate(mutation, variables, "PostResponse", "createPost")
+```
+
+### Using Webhook Handlers
+
+```go
+import (
+    "github.com/saichler/l8web/go/web/webhook"
+    "github.com/saichler/l8web/go/web/webhook/github"
+)
+
+// Create a GitHub webhook handler
+handler := webhook.NewHandler(
+    &github.Provider{},
+    func(eventType string, payload []byte) int {
+        switch eventType {
+        case "push":
+            var push github.PushEvent
+            json.Unmarshal(payload, &push)
+            // Extract issue references from commit messages
+            for _, commit := range push.Commits {
+                refs := webhook.ExtractIssueRefs(commit.Message)
+                // Process refs (e.g., close issues)
+            }
+            return http.StatusOK
+        case "pull_request":
+            var pr github.PullRequestEvent
+            json.Unmarshal(payload, &pr)
+            // Handle PR events
+            return http.StatusOK
+        default:
+            return http.StatusOK
+        }
+    },
+    func(payload []byte) string {
+        // Look up webhook secret for the repo
+        repoURL := github.RepoURL(payload)
+        return lookupSecret(repoURL)
+    },
+)
+
+// Register the handler on your HTTP mux
+mux.Handle("/webhooks/github", handler)
 ```
 
 ### Service Registration
@@ -422,6 +464,10 @@ The test suite includes:
 - Protocol Buffer serialization/deserialization
 - Authentication flows (Bearer, API Key)
 - Adjacent VNet token mapping
+- Webhook handler (POST enforcement, event dispatch, error handling)
+- GitHub webhook provider (event type, signature verification)
+- HMAC-SHA256 signature verification
+- Issue reference extraction from commit messages
 
 ## Security Features
 
@@ -431,6 +477,7 @@ The test suite includes:
 - **API Key Auth**: Machine-to-machine authentication via custom headers
 - **Two-Factor Auth**: TOTP-based second factor authentication
 - **CAPTCHA Support**: Bot protection for registration flows
+- **Webhook Signature Verification**: HMAC-SHA256 payload validation for GitHub; token verification for GitLab
 - **Adjacent Token Mapping**: Cross-VNet authentication support
 
 ## Integration with Layer 8
@@ -461,3 +508,4 @@ This project is part of the Layer 8 framework ecosystem. Contributions are welco
 - [l8bus](https://github.com/saichler/l8bus) - Layer 8 bus/overlay networking
 - [l8utils](https://github.com/saichler/l8utils) - Utility functions
 - [l8services](https://github.com/saichler/l8services) - Service management
+- [l8test](https://github.com/saichler/l8test) - Testing infrastructure
