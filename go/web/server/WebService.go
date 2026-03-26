@@ -25,6 +25,7 @@
 //   - /tfaVerify    - TFA code verification during login
 //   - /captcha      - CAPTCHA challenge generation
 //   - /register     - User registration with CAPTCHA
+//   - /permissions  - Per-type allowed actions for the authenticated user
 
 package server
 
@@ -119,6 +120,7 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/tfaVerify", this.TFAVerify)
 		http.DefaultServeMux.HandleFunc("/captcha", this.Captcha)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
+		http.DefaultServeMux.HandleFunc("/permissions", this.Permissions)
 	}
 
 	for _, n := range sla.Args() {
@@ -327,6 +329,52 @@ func (this *WebService) Registry(w http.ResponseWriter, r *http.Request) {
 	byt, _ := protojson.Marshal(typeList)
 	w.WriteHeader(http.StatusOK)
 	w.Write(byt)
+}
+
+// Permissions handles requests to the /permissions endpoint, returning the
+// per-type allowed actions for the authenticated user as JSON.
+// Response format: { "TypeName": [1,2,5], ... } where 1=POST,2=PUT,3=PATCH,4=DELETE,5=GET
+func (this *WebService) Permissions(w http.ResponseWriter, r *http.Request) {
+	bearer := r.Header.Get("Authorization")
+	if bearer == "" {
+		bearer = extractToken(r)
+	}
+	if bearer == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	aaaid, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	actions := this.vnic.Resources().Security().AllowedActions(this.vnic, aaaid)
+	if actions == nil {
+		// nil means permissive (no security provider or shallow provider) — return empty map
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("{}"))
+		return
+	}
+	// Serialize as JSON manually for map[string][]int32
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{"))
+	first := true
+	for typeName, actionList := range actions {
+		if !first {
+			w.Write([]byte(","))
+		}
+		first = false
+		w.Write([]byte(fmt.Sprintf("%q:[", typeName)))
+		for i, a := range actionList {
+			if i > 0 {
+				w.Write([]byte(","))
+			}
+			w.Write([]byte(fmt.Sprintf("%d", a)))
+		}
+		w.Write([]byte("]"))
+	}
+	w.Write([]byte("}"))
 }
 
 // ValidateBearerToken validates the bearer token from an HTTP request.
