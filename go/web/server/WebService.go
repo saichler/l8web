@@ -348,7 +348,9 @@ func (this *WebService) Permissions(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	fmt.Printf("[Permissions] aaaid=%q len=%d\n", aaaid, len(aaaid))
 	actions := this.vnic.Resources().Security().AllowedActions(this.vnic, aaaid)
+	fmt.Printf("[Permissions] AllowedActions returned %d entries (nil=%v)\n", len(actions), actions == nil)
 	if actions == nil {
 		// nil means permissive (no security provider or shallow provider) — return empty map
 		w.WriteHeader(http.StatusOK)
