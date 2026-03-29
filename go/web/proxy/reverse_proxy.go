@@ -99,7 +99,7 @@ func NewReverseProxy() *ProxyConfig {
 					},
 					{
 						Domains:    []string{"www.l8erp.one", "l8erp.one"},
-						TargetPort: "7773",
+						TargetPort: "2773",
 						CertFile:   "l8erp.one/domain.cert.pem",
 						KeyFile:    "l8erp.one/private.key.pem",
 					},
@@ -155,17 +155,6 @@ func NewReverseProxy() *ProxyConfig {
 					{
 						Domains:    []string{"www.probler.dev", "probler.dev"},
 						TargetPort: "9095",
-						CertFile:   "probler.dev/domain.cert.pem",
-						KeyFile:    "probler.dev/private.key.pem",
-					},
-				},
-			},
-			{
-				ListenPort: ":2883",
-				Routes: []RouteConfig{
-					{
-						Domains:    []string{"www.probler.dev", "probler.dev"},
-						TargetPort: "2773",
 						CertFile:   "probler.dev/domain.cert.pem",
 						KeyFile:    "probler.dev/private.key.pem",
 					},
