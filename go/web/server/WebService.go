@@ -185,7 +185,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsn)
 	}
 
-	token, faHash, needTFA, setupTFA, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
+	token, faHash, needTFA, setupTFA, portal, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		authToken := &l8api.AuthToken{}
@@ -200,7 +200,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	//This is a temp solution, need to integrate it.
 	if this.adjacents != nil {
 		for _, adjacent := range this.adjacents {
-			aToken, _, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
+			aToken, _, _, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
 			if aErr == nil {
 				mtx.Lock()
 				adjacentTokens[token] = aToken
@@ -214,6 +214,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	authToken.NeedTfa = needTFA
 	authToken.SetupTfa = setupTFA
 	authToken.TokenHash = faHash
+	authToken.Portal = portal
 
 	if needTFA {
 		fa := &faTokenHash{authToken: authToken, hash: faHash}
