@@ -28,6 +28,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -279,6 +280,55 @@ func (this *RestServer) smartRootHandler(w http.ResponseWriter, r *http.Request)
 }
 
 
+
+// UpdateLoginJsonPrefix reads the web/login.json file, updates the apiPrefix
+// field under the "app" section with the given prefix, and writes it back.
+func UpdateLoginJsonPrefix(prefix string) error {
+	loginJsonPath := "web/login.json"
+	possiblePaths := []string{
+		"web/login.json",
+		"./web/login.json",
+		"../web/login.json",
+		"../../web/login.json",
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			loginJsonPath = path
+			break
+		}
+	}
+
+	data, err := os.ReadFile(loginJsonPath)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", loginJsonPath, err)
+	}
+
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse %s: %w", loginJsonPath, err)
+	}
+
+	appSection, ok := config["app"].(map[string]interface{})
+	if !ok {
+		appSection = make(map[string]interface{})
+		config["app"] = appSection
+	}
+
+	appSection["apiPrefix"] = prefix
+
+	updatedData, err := json.MarshalIndent(config, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated config: %w", err)
+	}
+
+	if err := os.WriteFile(loginJsonPath, updatedData, 0644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", loginJsonPath, err)
+	}
+
+	fmt.Println("Updated apiPrefix in", loginJsonPath, "to", prefix)
+	return nil
+}
 
 // concat efficiently concatenates multiple strings using a bytes.Buffer.
 // Returns an empty string if no arguments are provided.
