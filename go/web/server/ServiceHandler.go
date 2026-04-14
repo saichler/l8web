@@ -96,25 +96,10 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		id, ok := this.vnic.Resources().Security().ValidateToken(bearer, this.vnic)
-		aToken := ""
 		if !ok && (id == "Token Setup TFA" || id == "Token Need TFA Verification") {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(id))
 			return
-		}
-		if !ok {
-			//This might be a request for the adjacent
-			if len(bearer) > 7 && (strings.HasPrefix(bearer, "bearer") || strings.HasPrefix(bearer, "Bearer")) {
-				bearer = bearer[7:]
-			}
-
-			mtx.Lock()
-			aToken, ok = adjacentTokens[bearer]
-			mtx.Unlock()
-
-			if aToken != "" {
-				id, ok = this.vnic.Resources().Security().ValidateToken(aToken, this.vnic)
-			}
 		}
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)

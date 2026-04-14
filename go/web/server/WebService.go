@@ -80,9 +80,6 @@ var registeredAuth = false
 // authEnabled indicates whether bearer token authentication is globally enabled.
 var authEnabled = false
 
-// adjacentTokens maps primary VNet tokens to adjacent VNet tokens for cross-network auth.
-var adjacentTokens = make(map[string]string)
-
 // proxyMode indicates whether the server is running behind a reverse proxy.
 var proxyMode = false
 
@@ -132,6 +129,7 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 					this.adjacents = make([]ifs.IVNic, 0)
 				}
 				this.adjacents = append(this.adjacents, nic)
+				this.vnic.Resources().Security().AddAdjacent(nic.Resources().Security())
 				registered[nic.Resources().SysConfig().VnetPort] = true
 				go func() {
 					time.Sleep(time.Second * 5)
@@ -194,19 +192,6 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsn)
 		this.vnic.Resources().Logger().Warning("Failed to authenticate user/pass #3")
 		return
-	}
-
-	//We need to authenticate with the adjacent as well
-	//This is a temp solution, need to integrate it.
-	if this.adjacents != nil {
-		for _, adjacent := range this.adjacents {
-			aToken, _, _, _, _, aErr := adjacent.Resources().Security().Authenticate(user.User, user.Pass, adjacent)
-			if aErr == nil {
-				mtx.Lock()
-				adjacentTokens[token] = aToken
-				mtx.Unlock()
-			}
-		}
 	}
 
 	authToken := &l8api.AuthToken{}
