@@ -130,7 +130,7 @@ func (this *RestServer) Start() error {
 	if this.CertDomain != "" {
 		cert, tlsErr := tls.X509KeyPair([]byte(this.CertPublic), []byte(this.CertPrivate))
 		if tlsErr != nil {
-			fmt.Println("Error parsing TLS certificate: ", tlsErr)
+			fmt.Println("Error parsing TLS certificate: ", this.CertPublic, ":", tlsErr)
 			err = this.webServer.ListenAndServe()
 		} else {
 			this.webServer.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
