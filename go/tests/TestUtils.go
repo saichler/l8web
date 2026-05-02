@@ -52,7 +52,7 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 	webNic.Resources().Registry().Register(&l8web.L8Empty{})
 	webNic.Resources().Registry().Register(&l8health.L8Top{})
 
-	domain, private, public := resources.Certificate()
+	domain, private, _ := resources.Certificate()
 
 	serverConfig := &server.RestServerConfig{
 		Host:           ipsegment.MachineIP,
@@ -60,7 +60,6 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 		Authentication: true,
 		CertDomain:     domain,
 		CertPrivate:    private,
-		CertPublic:     public,
 		Prefix:         "/test/",
 	}
 	srv, err := server.NewRestServer(serverConfig)

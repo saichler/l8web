@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-// Package server provides a RESTful HTTP/HTTPS server implementation for the Layer 8 framework.
-// It supports automatic TLS certificate generation, bearer token authentication, and seamless
-// integration with Layer 8's Virtual Network Interface (VNic) for distributed service communication.
+// Package server provides a RESTful HTTPS server implementation for the Layer 8 framework.
+// It supports TLS, bearer token authentication, and seamless integration with Layer 8's
+// Virtual Network Interface (VNic) for distributed service communication.
 //
 // The server registers web services dynamically and routes HTTP requests through the Layer 8
 // network overlay, enabling proximity-based routing and service discovery.
@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/saichler/l8types/go/ifs"
@@ -37,7 +36,7 @@ import (
 // endPoints tracks registered endpoint paths to prevent duplicate registrations.
 var endPoints = maps.NewSyncMap()
 
-// RestServer implements the ifs.IWebServer interface and provides HTTP/HTTPS
+// RestServer implements the ifs.IWebServer interface and provides HTTPS
 // server functionality with Layer 8 integration. It manages web service registration,
 // TLS configuration, and request routing.
 type RestServer struct {
@@ -51,9 +50,8 @@ type RestServerConfig struct {
 	Port           int    // Port number to listen on
 	Authentication bool   // Enable bearer token authentication for endpoints
 	Prefix         string // URL prefix for all registered endpoints (e.g., "/api/v1/")
-	CertDomain     string
-	CertPrivate    string
-	CertPublic     string
+	CertDomain     string // TLS certificate PEM (required)
+	CertPrivate    string // TLS private key PEM (required)
 }
 
 // NewRestServerNoIndex creates a REST server in proxy mode, which disables
@@ -64,20 +62,20 @@ func NewRestServerNoIndex(config *RestServerConfig) (ifs.IWebServer, error) {
 	return NewRestServer(config)
 }
 
-// NewRestServer creates a new REST server with the provided configuration.
-// It initializes the HTTP multiplexer, loads any web UI files, and generates
-// TLS certificates if a CertName is specified but the certificate files don't exist.
-// The server supports both HTTP and HTTPS depending on whether CertName is set.
+// NewRestServer creates a new HTTPS REST server with the provided configuration.
+// It initializes the HTTP multiplexer and loads any web UI files.
+// CertDomain and CertPrivate are required — the server only supports HTTPS.
 func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
+	if config.CertDomain == "" || config.CertPrivate == "" {
+		return nil, fmt.Errorf("CertDomain and CertPrivate are required: RestServer only supports HTTPS")
+	}
 	rs := &RestServer{}
 	rs.Authentication = config.Authentication
 	rs.Host = config.Host
 	rs.Port = config.Port
 	rs.Prefix = config.Prefix
-	rs.Authentication = config.Authentication
 	rs.CertDomain = config.CertDomain
 	rs.CertPrivate = config.CertPrivate
-	rs.CertPublic = config.CertPublic
 
 	http.DefaultServeMux = http.NewServeMux()
 	rs.LoadWebUI()
@@ -117,35 +115,20 @@ func (this *RestServer) RegisterWebService(ws ifs.IWebService, vnic ifs.IVNic) {
 	}
 }
 
-// Start begins listening for HTTP/HTTPS requests. This method blocks until
-// the server is stopped. If CertName is configured, it attempts to start with TLS.
-// If TLS fails (excluding graceful shutdown), it falls back to plain HTTP.
+// Start begins listening for HTTPS requests. This method blocks until
+// the server is stopped.
 func (this *RestServer) Start() error {
-	var err error
 	this.webServer = &http.Server{
 		Addr:    this.Host + ":" + strconv.Itoa(this.Port),
 		Handler: http.DefaultServeMux,
 	}
 
-	if this.CertDomain != "" {
-		cert, tlsErr := tls.X509KeyPair([]byte(this.CertDomain), []byte(this.CertPrivate))
-		if tlsErr != nil {
-			fmt.Println("Error parsing TLS certificate:", tlsErr)
-			fmt.Println(this.CertDomain)
-			fmt.Println(this.CertPrivate)
-			err = this.webServer.ListenAndServe()
-		} else {
-			this.webServer.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
-			err = this.webServer.ListenAndServeTLS("", "")
-		}
-		if err != nil && !strings.Contains(err.Error(), "Server closed") {
-			fmt.Println("Error starting web server ", err)
-			err = this.webServer.ListenAndServe()
-		}
-	} else {
-		err = this.webServer.ListenAndServe()
+	cert, err := tls.X509KeyPair([]byte(this.CertDomain), []byte(this.CertPrivate))
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse TLS certificate: %v", err))
 	}
-	return err
+	this.webServer.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+	return this.webServer.ListenAndServeTLS("", "")
 }
 
 // RegisterHandler registers a custom HTTP handler at the given path,
