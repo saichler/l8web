@@ -128,10 +128,10 @@ func (this *RestServer) Start() error {
 	}
 
 	if this.CertDomain != "" {
-		cert, tlsErr := tls.X509KeyPair([]byte(this.CertPublic), []byte(this.CertPrivate))
+		cert, tlsErr := tls.X509KeyPair([]byte(this.CertDomain), []byte(this.CertPrivate))
 		if tlsErr != nil {
 			fmt.Println("Error parsing TLS certificate:", tlsErr)
-			fmt.Println(this.CertPublic)
+			fmt.Println(this.CertDomain)
 			fmt.Println(this.CertPrivate)
 			err = this.webServer.ListenAndServe()
 		} else {
