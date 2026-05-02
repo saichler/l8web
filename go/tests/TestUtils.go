@@ -52,11 +52,15 @@ func createWebServer(t *testing.T) (ifs.IVNic, ifs.IWebServer, bool) {
 	webNic.Resources().Registry().Register(&l8web.L8Empty{})
 	webNic.Resources().Registry().Register(&l8health.L8Top{})
 
+	domain, private, public := resources.Certificate()
+
 	serverConfig := &server.RestServerConfig{
 		Host:           ipsegment.MachineIP,
 		Port:           8080,
 		Authentication: true,
-		CertName:       "test",
+		CertDomain:     domain,
+		CertPrivate:    private,
+		CertPublic:     public,
 		Prefix:         "/test/",
 	}
 	srv, err := server.NewRestServer(serverConfig)
@@ -99,12 +103,15 @@ func createRestClient2(t *testing.T, pb interface{}, prefix string) (*client.Res
 	resources.Registry().Register(&l8web.L8Empty{})
 	resources.Registry().Register(&l8api.AuthToken{})
 	resources.Registry().Register(&l8api.AuthUser{})
+	domain, private, public := resources.Certificate()
 	clientConfig := &client.RestClientConfig{
 		Host:          ipsegment.MachineIP,
 		Port:          8080,
 		Https:         true,
 		TokenRequired: true,
-		CertFileName:  "test.crt",
+		CertDomain:    domain,
+		CertPrivate:   private,
+		CertPublic:    public,
 		Prefix:        prefix,
 		AuthInfo: &client.RestAuthInfo{
 			NeedAuth:   true,

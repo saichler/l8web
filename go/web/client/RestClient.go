@@ -42,12 +42,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
 	nethttp "net/http"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -62,20 +60,22 @@ import (
 // It handles authentication, request building, and response parsing with
 // Protocol Buffer support.
 type RestClient struct {
-	RestClientConfig               // Embedded configuration
+	RestClientConfig                 // Embedded configuration
 	httpClient       *nethttp.Client // Underlying HTTP client with TLS config
 	resources        ifs.IResources  // Layer 8 resources for type registry access
 }
 
 // RestClientConfig contains configuration options for creating a REST client.
 type RestClientConfig struct {
-	Host          string        // Target server hostname (e.g., "api.example.com")
-	Prefix        string        // URL prefix for all requests (e.g., "/api/v1/")
-	Port          int           // Target server port
-	Https         bool          // Enable HTTPS connections
-	TokenRequired bool          // Require bearer token for requests
-	Token         string        // Current bearer token (set by Auth() or manually)
-	CertFileName  string        // Path to CA certificate file for TLS verification
+	Host          string // Target server hostname (e.g., "api.example.com")
+	Prefix        string // URL prefix for all requests (e.g., "/api/v1/")
+	Port          int    // Target server port
+	Https         bool   // Enable HTTPS connections
+	TokenRequired bool   // Require bearer token for requests
+	Token         string // Current bearer token (set by Auth() or manually)
+	CertDomain    string
+	CertPrivate   string
+	CertPublic    string
 	AuthInfo      *RestAuthInfo // Authentication configuration
 }
 
@@ -96,13 +96,13 @@ type RestAuthInfo struct {
 
 // NewRestClient creates a new REST client with the provided configuration.
 // For HTTPS connections, it configures TLS:
-//   - If CertFileName is provided, it uses that CA certificate for verification
+//   - If CertDomain is provided, it uses CertPublic as the CA certificate for verification
 //   - Otherwise, it uses InsecureSkipVerify (suitable for self-signed certs)
-//
-// Returns an error if the certificate file cannot be read.
 func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestClient, error) {
 	rc := &RestClient{}
-	rc.CertFileName = config.CertFileName
+	rc.CertDomain = config.CertDomain
+	rc.CertPrivate = config.CertPrivate
+	rc.CertPublic = config.CertPublic
 	rc.Host = config.Host
 	rc.Https = config.Https
 	rc.AuthInfo = config.AuthInfo
@@ -115,32 +115,13 @@ func NewRestClient(config *RestClientConfig, resources ifs.IResources) (*RestCli
 	if !rc.Https {
 		rc.httpClient = &nethttp.Client{}
 	} else {
-		if rc.CertFileName != "" {
-			caCert, err := os.ReadFile(rc.CertFileName)
-			if err != nil {
-				return nil, err
-			}
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert)
-			rc.httpClient = &nethttp.Client{
-				Transport: &nethttp.Transport{
-					TLSClientConfig: &tls.Config{
-						RootCAs: caCertPool,
-						//InsecureSkipVerify: true,
-						ClientAuth: tls.NoClientCert,
-						ServerName: rc.Host,
-					},
+		rc.httpClient = &nethttp.Client{
+			Transport: &nethttp.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+					ServerName:         rc.Host,
 				},
-			}
-		} else {
-			rc.httpClient = &nethttp.Client{
-				Transport: &nethttp.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
-						ServerName:         rc.Host,
-					},
-				},
-			}
+			},
 		}
 
 	}

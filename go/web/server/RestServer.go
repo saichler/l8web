@@ -23,16 +23,14 @@ package server
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/saichler/l8types/go/ifs"
-	"github.com/saichler/l8utils/go/utils/certs"
-	"github.com/saichler/l8utils/go/utils/ipsegment"
 	"github.com/saichler/l8utils/go/utils/maps"
 )
 
@@ -43,17 +41,19 @@ var endPoints = maps.NewSyncMap()
 // server functionality with Layer 8 integration. It manages web service registration,
 // TLS configuration, and request routing.
 type RestServer struct {
-	webServer *http.Server // The underlying Go HTTP server
-	RestServerConfig       // Embedded configuration
+	webServer        *http.Server // The underlying Go HTTP server
+	RestServerConfig              // Embedded configuration
 }
 
 // RestServerConfig contains the configuration options for creating a REST server.
 type RestServerConfig struct {
 	Host           string // Host address to bind to (e.g., "localhost", "0.0.0.0")
 	Port           int    // Port number to listen on
-	CertName       string // Base name for TLS certificate files (e.g., "server" for server.crt/server.crtKey)
 	Authentication bool   // Enable bearer token authentication for endpoints
 	Prefix         string // URL prefix for all registered endpoints (e.g., "/api/v1/")
+	CertDomain     string
+	CertPrivate    string
+	CertPublic     string
 }
 
 // NewRestServerNoIndex creates a REST server in proxy mode, which disables
@@ -71,23 +71,16 @@ func NewRestServerNoIndex(config *RestServerConfig) (ifs.IWebServer, error) {
 func NewRestServer(config *RestServerConfig) (ifs.IWebServer, error) {
 	rs := &RestServer{}
 	rs.Authentication = config.Authentication
-	rs.CertName = config.CertName
 	rs.Host = config.Host
 	rs.Port = config.Port
 	rs.Prefix = config.Prefix
 	rs.Authentication = config.Authentication
+	rs.CertDomain = config.CertDomain
+	rs.CertPrivate = config.CertPrivate
+	rs.CertPublic = config.CertPublic
 
 	http.DefaultServeMux = http.NewServeMux()
 	rs.LoadWebUI()
-
-	if rs.CertName != "" {
-		_, err := os.Open(rs.CertName + ".crt")
-		if err != nil {
-			fmt.Println("Error loading certificate:", err)
-			certs.CreateLayer8Crt(rs.CertName, ipsegment.MachineIP, int64(rs.Port))
-		}
-	}
-
 	return rs, nil
 }
 
@@ -134,11 +127,17 @@ func (this *RestServer) Start() error {
 		Handler: http.DefaultServeMux,
 	}
 
-	if this.CertName != "" {
-		err = this.webServer.ListenAndServeTLS(this.CertName+".crt", this.CertName+".crtKey")
+	if this.CertDomain != "" {
+		cert, tlsErr := tls.X509KeyPair([]byte(this.CertPublic), []byte(this.CertPrivate))
+		if tlsErr != nil {
+			fmt.Println("Error parsing TLS certificate: ", tlsErr)
+			err = this.webServer.ListenAndServe()
+		} else {
+			this.webServer.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+			err = this.webServer.ListenAndServeTLS("", "")
+		}
 		if err != nil && !strings.Contains(err.Error(), "Server closed") {
 			fmt.Println("Error starting web server ", err)
-			this.CertName = ""
 			err = this.webServer.ListenAndServe()
 		}
 	} else {
