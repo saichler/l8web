@@ -42,6 +42,7 @@ import (
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
 	"github.com/saichler/l8types/go/types/l8api"
+	"github.com/saichler/l8types/go/types/l8notify"
 	"github.com/saichler/l8types/go/types/l8web"
 	"github.com/saichler/l8utils/go/utils/web"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -122,6 +123,11 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 
 		this.wsManager = NewWebSocketManager(vnic)
 		http.DefaultServeMux.HandleFunc("/ws", this.wsManager.HandleUpgrade)
+
+		wsNotifySvc := NewWsNotifyService(this.wsManager)
+		wsSla := ifs.NewServiceLevelAgreement(wsNotifySvc, WsNotifyServiceName, WsNotifyServiceArea, false, nil)
+		wsSla.SetServiceItem(&l8notify.L8NotificationSet{})
+		vnic.Resources().Services().Activate(wsSla, vnic)
 	}
 
 	for _, n := range sla.Args() {

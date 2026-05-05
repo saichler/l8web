@@ -128,7 +128,7 @@ func (this *WebSocketManager) Remove(aaaId string) {
 	this.mu.Unlock()
 }
 
-// OnNotification serializes a notification and broadcasts to all connected clients.
+// OnNotification serializes a notification and sends to subscribed clients.
 func (this *WebSocketManager) OnNotification(notification *l8notify.L8NotificationSet) {
 	action := ""
 	switch notification.Type {
@@ -154,7 +154,21 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 
 	this.mu.RLock()
 	defer this.mu.RUnlock()
-	for aaaId, wc := range this.connections {
+
+	if len(notification.AaaIds) == 0 {
+		for aaaId, wc := range this.connections {
+			if err := wc.writeJSON(data); err != nil {
+				go this.Remove(aaaId)
+			}
+		}
+		return
+	}
+
+	for aaaId := range notification.AaaIds {
+		wc, ok := this.connections[aaaId]
+		if !ok {
+			continue
+		}
 		if err := wc.writeJSON(data); err != nil {
 			go this.Remove(aaaId)
 		}
