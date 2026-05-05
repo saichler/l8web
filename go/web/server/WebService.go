@@ -122,7 +122,6 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 
 		this.wsManager = NewWebSocketManager(vnic)
 		http.DefaultServeMux.HandleFunc("/ws", this.wsManager.HandleUpgrade)
-		vnic.Resources().Services().SetNotificationListener(this.wsManager.OnNotification)
 	}
 
 	for _, n := range sla.Args() {

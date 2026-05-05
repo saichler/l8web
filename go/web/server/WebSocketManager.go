@@ -40,8 +40,7 @@ func (c *wsConn) writeJSON(data []byte) error {
 	return c.conn.WriteMessage(websocket.TextMessage, data)
 }
 
-// WebSocketManager manages WebSocket connections keyed by bearer token.
-// Each browser tab opens one connection using its unique bearer token.
+// WebSocketManager manages WebSocket connections keyed by AAAId (authenticated user identity).
 type WebSocketManager struct {
 	mu          sync.RWMutex
 	connections map[string]*wsConn
@@ -55,14 +54,14 @@ func NewWebSocketManager(vnic ifs.IVNic) *WebSocketManager {
 	}
 }
 
-// HandleUpgrade validates the bearer token and upgrades to a WebSocket connection.
+// HandleUpgrade validates the bearer token, resolves the AAAId, and upgrades to a WebSocket connection.
 func (this *WebSocketManager) HandleUpgrade(w http.ResponseWriter, r *http.Request) {
 	token := extractToken(r)
 	if token == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	_, ok := this.vnic.Resources().Security().ValidateToken(token, this.vnic)
+	aaaId, ok := this.vnic.Resources().Security().ValidateToken(token, this.vnic)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -77,20 +76,20 @@ func (this *WebSocketManager) HandleUpgrade(w http.ResponseWriter, r *http.Reque
 	wc := &wsConn{conn: conn}
 
 	this.mu.Lock()
-	old, exists := this.connections[token]
+	old, exists := this.connections[aaaId]
 	if exists {
 		old.conn.Close()
 	}
-	this.connections[token] = wc
+	this.connections[aaaId] = wc
 	this.mu.Unlock()
 
 	go this.writePump(wc)
-	go this.readPump(token, wc)
+	go this.readPump(aaaId, wc)
 }
 
 // readPump reads from the connection to detect close and handle pings.
-func (this *WebSocketManager) readPump(token string, wc *wsConn) {
-	defer this.Remove(token)
+func (this *WebSocketManager) readPump(aaaId string, wc *wsConn) {
+	defer this.Remove(aaaId)
 	wc.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	wc.conn.SetPongHandler(func(string) error {
 		wc.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -118,13 +117,13 @@ func (this *WebSocketManager) writePump(wc *wsConn) {
 	}
 }
 
-// Remove closes and removes the connection for the given token.
-func (this *WebSocketManager) Remove(token string) {
+// Remove closes and removes the connection for the given AAAId.
+func (this *WebSocketManager) Remove(aaaId string) {
 	this.mu.Lock()
-	wc, ok := this.connections[token]
+	wc, ok := this.connections[aaaId]
 	if ok {
 		wc.conn.Close()
-		delete(this.connections, token)
+		delete(this.connections, aaaId)
 	}
 	this.mu.Unlock()
 }
@@ -155,9 +154,9 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 
 	this.mu.RLock()
 	defer this.mu.RUnlock()
-	for token, wc := range this.connections {
+	for aaaId, wc := range this.connections {
 		if err := wc.writeJSON(data); err != nil {
-			go this.Remove(token)
+			go this.Remove(aaaId)
 		}
 	}
 }

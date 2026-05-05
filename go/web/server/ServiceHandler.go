@@ -134,6 +134,9 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	action = methodToAction(r.Method, body)
+	if q, ok := body.(*l8api.L8Query); ok && aaaid != "" {
+		q.AaaId = aaaid
+	}
 	var elems ifs.IElements
 
 	dest := this.vnic.Resources().SysConfig().RemoteUuid
