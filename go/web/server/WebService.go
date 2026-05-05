@@ -61,6 +61,7 @@ type WebService struct {
 	vnic      ifs.IVNic      // Primary VNic for service communication
 	adjacents []ifs.IVNic    // Adjacent VNet Vnic for cross-network auth
 	faTokens  *sync.Map
+	wsManager *WebSocketManager
 }
 
 type faTokenHash struct {
@@ -118,6 +119,10 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/captcha", this.Captcha)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
 		http.DefaultServeMux.HandleFunc("/permissions", this.Permissions)
+
+		this.wsManager = NewWebSocketManager(vnic)
+		http.DefaultServeMux.HandleFunc("/ws", this.wsManager.HandleUpgrade)
+		vnic.Resources().Services().SetNotificationListener(this.wsManager.OnNotification)
 	}
 
 	for _, n := range sla.Args() {
