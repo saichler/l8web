@@ -15,7 +15,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -56,24 +55,19 @@ func NewWebSocketManager(vnic ifs.IVNic) *WebSocketManager {
 
 // HandleUpgrade validates the bearer token, resolves the AAAId, and upgrades to a WebSocket connection.
 func (this *WebSocketManager) HandleUpgrade(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[WS-DEBUG-4] HandleUpgrade called")
 	token := extractToken(r)
 	if token == "" {
-		fmt.Println("[WS-DEBUG-4] no token, returning 401")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 	aaaId, ok := this.vnic.Resources().Security().ValidateToken(token, this.vnic)
 	if !ok {
-		fmt.Println("[WS-DEBUG-4] invalid token, returning 401")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	fmt.Printf("[WS-DEBUG-4] token valid, aaaId=%s\n", aaaId)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("[WS-DEBUG-4] WebSocket upgrade failed:", err)
 		return
 	}
 
@@ -87,7 +81,6 @@ func (this *WebSocketManager) HandleUpgrade(w http.ResponseWriter, r *http.Reque
 	this.connections[aaaId] = wc
 	this.mu.Unlock()
 
-	fmt.Printf("[WS-DEBUG-4] WebSocket connected: aaaId=%s totalConns=%d\n", aaaId, this.ConnectionCount())
 	go this.writePump(wc)
 	go this.readPump(aaaId, wc)
 }
@@ -135,7 +128,6 @@ func (this *WebSocketManager) Remove(aaaId string) {
 
 // OnNotification serializes a notification and sends to subscribed clients.
 func (this *WebSocketManager) OnNotification(notification *l8notify.L8NotificationSet) {
-	fmt.Printf("[WS-DEBUG-5] OnNotification: model=%s key=%s type=%v connCount=%d\n", notification.ModelType, notification.ModelKey, notification.Type, this.ConnectionCount())
 	action := ""
 	switch notification.Type {
 	case l8notify.L8NotificationType_Post:
@@ -145,7 +137,6 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 	case l8notify.L8NotificationType_Delete:
 		action = "delete"
 	default:
-		fmt.Printf("[WS-DEBUG-5] unknown notification type %v, returning\n", notification.Type)
 		return
 	}
 
@@ -156,22 +147,16 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 	}
 	data, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Printf("[WS-DEBUG-5] json marshal error: %v\n", err)
 		return
 	}
-	fmt.Printf("[WS-DEBUG-5] sending to clients: %s\n", string(data))
 
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 
 	if len(notification.AaaIds) == 0 {
-		fmt.Printf("[WS-DEBUG-5] broadcasting to all %d connections\n", len(this.connections))
 		for aaaId, wc := range this.connections {
 			if err := wc.writeJSON(data); err != nil {
-				fmt.Printf("[WS-DEBUG-5] write error for %s: %v\n", aaaId, err)
 				go this.Remove(aaaId)
-			} else {
-				fmt.Printf("[WS-DEBUG-5] sent to %s OK\n", aaaId)
 			}
 		}
 		return
