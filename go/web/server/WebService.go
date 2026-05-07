@@ -125,9 +125,10 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/ws", this.wsManager.HandleUpgrade)
 		fmt.Println("[WS-DEBUG-2] Registered /ws endpoint and creating WsNotifyService")
 
-		wsNotifySvc := NewWsNotifyService(this.wsManager)
+		wsNotifySvc := &WsNotifyService{}
 		wsSla := ifs.NewServiceLevelAgreement(wsNotifySvc, WsNotifyServiceName, WsNotifyServiceArea, false, nil)
 		wsSla.SetServiceItem(&l8notify.L8NotificationSet{})
+		wsSla.SetArgs(this.wsManager)
 		_, wsErr := vnic.Resources().Services().Activate(wsSla, vnic)
 		fmt.Printf("[WS-DEBUG-2] WsNotifyService activated: err=%v\n", wsErr)
 	}

@@ -35,6 +35,9 @@ func NewWsNotifyService(wsManager *WebSocketManager) *WsNotifyService {
 }
 
 func (this *WsNotifyService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic) error {
+	if len(sla.Args()) > 0 {
+		this.wsManager = sla.Args()[0].(*WebSocketManager)
+	}
 	fmt.Printf("[WS-DEBUG-3] WsNotifyService.Activate called: name=%s area=%d wsManager=%v\n", sla.ServiceName(), sla.ServiceArea(), this.wsManager != nil)
 	return nil
 }
