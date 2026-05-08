@@ -35,7 +35,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -228,16 +227,12 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		host := strings.ToLower(r.Host)
-		log.Printf("[WS-DEBUG] fallback handler: %s %s Host=%q RemoteAddr=%s", r.Method, r.URL.String(), r.Host, r.RemoteAddr)
-		logRequestHeaders("fallback handler", r)
 
 		for _, route := range listener.Routes {
 			for _, domain := range route.Domains {
 				hostWithoutPort := strings.Split(host, ":")[0]
 				if hostWithoutPort == domain || host == domain {
-					log.Printf("[WS-DEBUG] fallback handler: matched domain=%s for host=%s", domain, host)
 					if isWebSocketUpgrade(r) {
-						log.Printf("[WS-DEBUG] fallback handler: detected WebSocket upgrade, proxying to %s:%s", hostname, route.TargetPort)
 						proxyWebSocket(w, r, hostname, route.TargetPort)
 						return
 					}
@@ -265,14 +260,11 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 			}
 		}
 
-		log.Printf("[WS-DEBUG] fallback handler: NO domain match for host=%q, returning 502", host)
 		http.Error(w, "Unknown host", http.StatusBadGateway)
 	})
 
 	tlsConfig := &tls.Config{
 		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			log.Printf("[WS-DEBUG] TLS handshake from %s, SNI=%q, ALPN=%v (listener %s)",
-				info.Conn.RemoteAddr(), info.ServerName, info.SupportedProtos, listener.ListenPort)
 			return pc.getCertificateForListener(info, listener)
 		},
 	}
@@ -283,11 +275,6 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 		Addr:      listener.ListenPort,
 		Handler:   mux,
 		TLSConfig: tlsConfig,
-		ConnState: func(conn net.Conn, state http.ConnState) {
-			if state == http.StateNew {
-				log.Printf("[WS-DEBUG] new TCP connection from %s (listener %s)", conn.RemoteAddr(), listener.ListenPort)
-			}
-		},
 	}
 
 	log.Printf("Starting reverse proxy on port %s", listener.ListenPort)
