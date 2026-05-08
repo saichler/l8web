@@ -274,6 +274,10 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 		},
 	}
 
+	// Disable HTTP/2 — Go's h2 does not support WebSocket upgrades.
+	// WebSockets require HTTP/1.1 Connection: Upgrade which h2 strips.
+	tlsConfig.NextProtos = []string{"http/1.1"}
+
 	server := &http.Server{
 		Addr:      listener.ListenPort,
 		Handler:   mux,
