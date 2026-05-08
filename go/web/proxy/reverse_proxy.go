@@ -221,12 +221,7 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 
 		for _, domain := range route.Domains {
 			pattern := fmt.Sprintf("%s/", domain)
-			mux.HandleFunc(pattern, func(domain string, proxy *httputil.ReverseProxy) http.HandlerFunc {
-				return func(w http.ResponseWriter, r *http.Request) {
-					log.Printf("Proxying request from %s to backend", domain)
-					proxy.ServeHTTP(w, r)
-				}
-			}(domain, proxy))
+			mux.HandleFunc(pattern, makeHandler(domain, hostname, route.TargetPort, proxy))
 		}
 	}
 
@@ -235,13 +230,14 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 
 		for _, route := range listener.Routes {
 			for _, domain := range route.Domains {
-				// Strip port from host for comparison
 				hostWithoutPort := strings.Split(host, ":")[0]
 				if hostWithoutPort == domain || host == domain {
-					hostname := os.Getenv("NODE_IP")
-					if hostname == "" {
-						hostname = "localhost"
+					if isWebSocketUpgrade(r) {
+						log.Printf("WebSocket upgrade from %s, proxying to %s:%s", host, hostname, route.TargetPort)
+						proxyWebSocket(w, r, hostname, route.TargetPort)
+						return
 					}
+
 					targetURL, _ := url.Parse(fmt.Sprintf("https://%s:%s", hostname, route.TargetPort))
 					proxy := httputil.NewSingleHostReverseProxy(targetURL)
 

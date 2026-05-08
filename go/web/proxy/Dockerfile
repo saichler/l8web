@@ -2,6 +2,7 @@ FROM saichler/builder:latest AS build
 
 COPY main /home/src/github.com/saichler/build/main
 COPY reverse_proxy.go /home/src/github.com/saichler/build/reverse_proxy.go
+COPY websocket_proxy.go /home/src/github.com/saichler/build/websocket_proxy.go
 
 RUN go mod init
 RUN GOPROXY=direct GOPRIVATE=github.com go mod tidy
