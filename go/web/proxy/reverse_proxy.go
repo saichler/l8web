@@ -227,13 +227,16 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		host := strings.ToLower(r.Host)
+		log.Printf("[WS-DEBUG] fallback handler: %s %s Host=%q RemoteAddr=%s", r.Method, r.URL.String(), r.Host, r.RemoteAddr)
+		logRequestHeaders("fallback handler", r)
 
 		for _, route := range listener.Routes {
 			for _, domain := range route.Domains {
 				hostWithoutPort := strings.Split(host, ":")[0]
 				if hostWithoutPort == domain || host == domain {
+					log.Printf("[WS-DEBUG] fallback handler: matched domain=%s for host=%s", domain, host)
 					if isWebSocketUpgrade(r) {
-						log.Printf("WebSocket upgrade from %s, proxying to %s:%s", host, hostname, route.TargetPort)
+						log.Printf("[WS-DEBUG] fallback handler: detected WebSocket upgrade, proxying to %s:%s", hostname, route.TargetPort)
 						proxyWebSocket(w, r, hostname, route.TargetPort)
 						return
 					}
@@ -261,6 +264,7 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 			}
 		}
 
+		log.Printf("[WS-DEBUG] fallback handler: NO domain match for host=%q, returning 502", host)
 		http.Error(w, "Unknown host", http.StatusBadGateway)
 	})
 
