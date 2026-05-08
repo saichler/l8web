@@ -35,6 +35,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -270,18 +271,23 @@ func (pc *ProxyConfig) startListener(listener ListenerConfig) error {
 
 	tlsConfig := &tls.Config{
 		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			log.Printf("[WS-DEBUG] TLS handshake from %s, SNI=%q, ALPN=%v (listener %s)",
+				info.Conn.RemoteAddr(), info.ServerName, info.SupportedProtos, listener.ListenPort)
 			return pc.getCertificateForListener(info, listener)
 		},
 	}
 
-	// Disable HTTP/2 — Go's h2 does not support WebSocket upgrades.
-	// WebSockets require HTTP/1.1 Connection: Upgrade which h2 strips.
 	tlsConfig.NextProtos = []string{"http/1.1"}
 
 	server := &http.Server{
 		Addr:      listener.ListenPort,
 		Handler:   mux,
 		TLSConfig: tlsConfig,
+		ConnState: func(conn net.Conn, state http.ConnState) {
+			if state == http.StateNew {
+				log.Printf("[WS-DEBUG] new TCP connection from %s (listener %s)", conn.RemoteAddr(), listener.ListenPort)
+			}
+		},
 	}
 
 	log.Printf("Starting reverse proxy on port %s", listener.ListenPort)
