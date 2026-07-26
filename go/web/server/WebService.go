@@ -194,32 +194,23 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsn)
 	}
 
-	token, faHash, needTFA, setupTFA, portal, err := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
-	if err != nil {
+	authToken := this.vnic.Resources().Security().Authenticate(user.User, user.Pass, this.vnic)
+	if authToken.Error != "" {
 		w.WriteHeader(http.StatusUnauthorized)
-		authToken := &l8api.AuthToken{}
-		authToken.Error = err.Error()
 		jsn, _ := protojson.Marshal(authToken)
 		w.Write(jsn)
 		this.vnic.Resources().Logger().Warning("Failed to authenticate user/pass #3")
 		return
 	}
 
-	authToken := &l8api.AuthToken{}
-	authToken.Token = token
-	authToken.NeedTfa = needTFA
-	authToken.SetupTfa = setupTFA
-	authToken.TokenHash = faHash
-	authToken.Portal = portal
-
-	if needTFA {
-		fa := &faTokenHash{authToken: authToken, hash: faHash}
+	if authToken.NeedTfa {
+		fa := &faTokenHash{authToken: authToken, hash: authToken.TokenHash}
 		this.faTokens.Store(user.User, fa)
 
 		faToken := &l8api.AuthToken{}
-		faToken.NeedTfa = needTFA
-		faToken.SetupTfa = setupTFA
-		faToken.TokenHash = faHash
+		faToken.NeedTfa = authToken.NeedTfa
+		faToken.SetupTfa = authToken.SetupTfa
+		faToken.TokenHash = authToken.TokenHash
 		jsn, _ := protojson.Marshal(faToken)
 		w.WriteHeader(http.StatusOK)
 		w.Write(jsn)
@@ -229,7 +220,7 @@ func (this *WebService) Auth(w http.ResponseWriter, r *http.Request) {
 	jsn, _ := protojson.Marshal(authToken)
 	http.SetCookie(w, &http.Cookie{
 		Name:     BearerCookieName,
-		Value:    token,
+		Value:    authToken.Token,
 		Path:     "/",
 		MaxAge:   86400,
 		HttpOnly: true,
