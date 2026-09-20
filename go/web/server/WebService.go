@@ -119,6 +119,8 @@ func (this *WebService) Activate(sla *ifs.ServiceLevelAgreement, vnic ifs.IVNic)
 		http.DefaultServeMux.HandleFunc("/tfaVerify", this.TFAVerify)
 		http.DefaultServeMux.HandleFunc("/captcha", this.Captcha)
 		http.DefaultServeMux.HandleFunc("/register", this.Register)
+		http.DefaultServeMux.HandleFunc("/forgotPassword", this.ForgotPassword)
+		http.DefaultServeMux.HandleFunc("/resetPassword", this.ResetPassword)
 		http.DefaultServeMux.HandleFunc("/permissions", this.Permissions)
 
 		this.wsManager = NewWebSocketManager(vnic)

@@ -141,3 +141,57 @@ func (this *WebService) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("{}"))
 }
+
+// ForgotPassword handles the /forgotPassword endpoint, the first step of the
+// self-service password recovery flow. It expects a POST request with a user
+// id (or email) and a valid CAPTCHA response. If the account exists, a
+// one-time reset link is emailed to it. The response never reveals whether
+// the account exists — only a bad CAPTCHA is surfaced as an error.
+func (this *WebService) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	body := &l8api.L8PasswordResetRequest{}
+	if !bodyToProto(w, r, "POST", body) {
+		return
+	}
+
+	// The reset link's base URL is derived from the incoming request — the
+	// security provider never sees the request, so it cannot know the public
+	// scheme/host itself.
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
+	resetBaseURL := scheme + "://" + r.Host + "/l8ui/login/reset-password.html"
+
+	// A bad CAPTCHA is a real error and is surfaced, same as /register. It
+	// reveals nothing about the account, since the CAPTCHA is checked before
+	// any lookup. Every other outcome (found, not found, throttled, send
+	// failed) comes back nil and answers 200.
+	err := this.vnic.Resources().Security().RequestPasswordReset(body.UserId, body.Captcha, resetBaseURL, this.vnic)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{}"))
+}
+
+// ResetPassword handles the /resetPassword endpoint, the second step of the
+// self-service password recovery flow. It expects a POST request with the user
+// id and token from the emailed link, plus the new password. Every failure
+// (no such user, no pending reset, expired, already used, wrong token) returns
+// the same generic error.
+func (this *WebService) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	body := &l8api.L8PasswordResetComplete{}
+	if !bodyToProto(w, r, "POST", body) {
+		return
+	}
+	err := this.vnic.Resources().Security().ResetPassword(body.UserId, body.Token, body.NewPassword, this.vnic)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{}"))
+}
