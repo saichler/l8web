@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/saichler/l8srlz/go/serialize/object"
 	"github.com/saichler/l8types/go/ifs"
+	"github.com/saichler/l8types/go/types/l8api"
 	"github.com/saichler/l8types/go/types/l8notify"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -90,7 +91,7 @@ func (this *WebSocketManager) HandleUpgrade(w http.ResponseWriter, r *http.Reque
 
 // readPump reads from the connection to detect close and handle pings.
 func (this *WebSocketManager) readPump(aaaId string, wc *wsConn) {
-	defer this.Remove(aaaId)
+	defer this.removeConn(aaaId, wc)
 	wc.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	wc.conn.SetPongHandler(func(string) error {
 		wc.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -118,15 +119,52 @@ func (this *WebSocketManager) writePump(wc *wsConn) {
 	}
 }
 
-// Remove closes and removes the connection for the given AAAId.
+// Remove closes and removes the connection for the given AAAId, and
+// unregisters the user's live-notification registrations.
 func (this *WebSocketManager) Remove(aaaId string) {
+	this.mu.RLock()
+	wc := this.connections[aaaId]
+	this.mu.RUnlock()
+	if wc != nil {
+		this.removeConn(aaaId, wc)
+	}
+}
+
+// removeConn closes wc and, if it is still aaaId's current connection,
+// removes it and unregisters the user's registrations. A connection that was
+// already replaced (a reconnect, or a second tab with the same session)
+// leaves the current one and its registrations alone -- without this check a
+// replaced connection's read loop, exiting, would remove its replacement.
+func (this *WebSocketManager) removeConn(aaaId string, wc *wsConn) {
 	this.mu.Lock()
-	wc, ok := this.connections[aaaId]
-	if ok {
-		wc.conn.Close()
+	current := this.connections[aaaId] == wc
+	if current {
 		delete(this.connections, aaaId)
 	}
 	this.mu.Unlock()
+	wc.conn.Close()
+	if current {
+		go this.unregisterAll(aaaId)
+	}
+}
+
+// unregisterAll sends an Unregister for every registration the user holds,
+// so their services stop matching changes for a client that is gone. If the
+// user reconnects meanwhile, the client re-registers its live components
+// itself, so the rest are not sent.
+func (this *WebSocketManager) unregisterAll(aaaId string) {
+	for _, r := range trackedRegistrations.take(aaaId) {
+		this.mu.RLock()
+		_, back := this.connections[aaaId]
+		this.mu.RUnlock()
+		if back {
+			return
+		}
+		q := &l8api.L8Query{Text: r.text, AaaId: aaaId,
+			Register: l8api.L8Register_L8_REGISTER_UNREGISTER, RegisterId: r.registerId}
+		forward(this.vnic, r.serviceName, r.serviceArea, ifs.GET, q,
+			timeoutOf(r.serviceName, r.serviceArea), aaaId)
+	}
 }
 
 // OnNotification serializes a notification and sends to subscribed clients.
@@ -190,7 +228,7 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 	if len(notification.AaaIds) == 0 {
 		for aaaId, wc := range this.connections {
 			if err := wc.writeJSON(data); err != nil {
-				go this.Remove(aaaId)
+				go this.removeConn(aaaId, wc)
 			}
 		}
 		return
@@ -202,7 +240,7 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 			continue
 		}
 		if err := wc.writeJSON(data); err != nil {
-			go this.Remove(aaaId)
+			go this.removeConn(aaaId, wc)
 		}
 	}
 }

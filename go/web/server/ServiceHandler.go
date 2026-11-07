@@ -81,9 +81,14 @@ func SetServiceTimeout(serviceName string, serviceArea byte, seconds int) {
 
 // timeout returns the request timeout in seconds for this handler's service.
 func (this *ServiceHandler) timeout() int {
+	return timeoutOf(this.serviceName, this.serviceArea)
+}
+
+// timeoutOf returns the request timeout in seconds for a service.
+func timeoutOf(serviceName string, serviceArea byte) int {
 	serviceTimeoutsMtx.RLock()
 	defer serviceTimeoutsMtx.RUnlock()
-	if t, ok := serviceTimeouts[serviceKey(this.serviceName, this.serviceArea)]; ok {
+	if t, ok := serviceTimeouts[serviceKey(serviceName, serviceArea)]; ok {
 		return t
 	}
 	return Timeout
@@ -187,17 +192,7 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 			elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, timeout)
 		}
 	} else {
-		if Target != "" {
-			elems = this.vnic.Request(Target, this.serviceName, this.serviceArea, action, body, timeout, aaaid)
-		} else {
-			if Method == ifs.M_Leader {
-				elems = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
-			} else if Method == ifs.M_Local {
-				elems = this.vnic.LocalRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
-			} else {
-				elems = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
-			}
-		}
+		elems = forward(this.vnic, this.serviceName, this.serviceArea, action, body, timeout, aaaid)
 	}
 
 	if elems.Error() != nil {
@@ -217,6 +212,12 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Validation Error")
 		fmt.Println(trans.ErrMsg)
 		return
+	}
+
+	// Remember the registration this query made or dropped, so the user's
+	// registrations can be unregistered when their websocket closes.
+	if isQuery {
+		trackedRegistrations.track(aaaid, this.serviceName, this.serviceArea, q)
 	}
 
 	w.WriteHeader(http.StatusOK)
