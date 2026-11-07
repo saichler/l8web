@@ -26,7 +26,9 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/saichler/l8bus/go/overlay/health"
 	"github.com/saichler/l8types/go/ifs"
@@ -55,6 +57,37 @@ type ServiceAction struct {
 
 // Timeout specifies the default request timeout in seconds for VNic operations.
 var Timeout = 30
+
+// serviceTimeouts holds per-service overrides of Timeout, keyed by serviceKey.
+var serviceTimeouts = map[string]int{}
+var serviceTimeoutsMtx sync.RWMutex
+
+func serviceKey(serviceName string, serviceArea byte) string {
+	return strconv.Itoa(int(serviceArea)) + "/" + serviceName
+}
+
+// SetServiceTimeout overrides Timeout for one service, for a service whose
+// requests legitimately run longer than the default (e.g. an LLM-backed
+// chat). Every other service keeps Timeout. A value <= 0 removes the override.
+func SetServiceTimeout(serviceName string, serviceArea byte, seconds int) {
+	serviceTimeoutsMtx.Lock()
+	defer serviceTimeoutsMtx.Unlock()
+	if seconds <= 0 {
+		delete(serviceTimeouts, serviceKey(serviceName, serviceArea))
+		return
+	}
+	serviceTimeouts[serviceKey(serviceName, serviceArea)] = seconds
+}
+
+// timeout returns the request timeout in seconds for this handler's service.
+func (this *ServiceHandler) timeout() int {
+	serviceTimeoutsMtx.RLock()
+	defer serviceTimeoutsMtx.RUnlock()
+	if t, ok := serviceTimeouts[serviceKey(this.serviceName, this.serviceArea)]; ok {
+		return t
+	}
+	return Timeout
+}
 
 // Target specifies a specific service instance UUID to route requests to.
 // If empty, requests are routed based on the Method setting.
@@ -142,26 +175,27 @@ func (this *ServiceHandler) serveHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	var elems ifs.IElements
 
+	timeout := this.timeout()
 	dest := this.vnic.Resources().SysConfig().RemoteUuid
 	if this.serviceName == health.ServiceName {
 		h, ok := body.(*l8health.L8Health)
 		if ok {
 			this.vnic.Resources().Logger().Info("Sending to destination ", h.Alias, " - ", h.AUuid)
-			elems = this.vnic.Request(h.AUuid, this.serviceName, this.serviceArea, action, body, Timeout)
+			elems = this.vnic.Request(h.AUuid, this.serviceName, this.serviceArea, action, body, timeout)
 		} else {
 			this.vnic.Resources().Logger().Info("Sending to vnet")
-			elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, Timeout)
+			elems = this.vnic.Request(dest, this.serviceName, this.serviceArea, action, body, timeout)
 		}
 	} else {
 		if Target != "" {
-			elems = this.vnic.Request(Target, this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
+			elems = this.vnic.Request(Target, this.serviceName, this.serviceArea, action, body, timeout, aaaid)
 		} else {
 			if Method == ifs.M_Leader {
-				elems = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
+				elems = this.vnic.LeaderRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
 			} else if Method == ifs.M_Local {
-				elems = this.vnic.LocalRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
+				elems = this.vnic.LocalRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
 			} else {
-				elems = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, action, body, Timeout, aaaid)
+				elems = this.vnic.ProximityRequest(this.serviceName, this.serviceArea, action, body, timeout, aaaid)
 			}
 		}
 	}
