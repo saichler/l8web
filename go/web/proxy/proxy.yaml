@@ -39,7 +39,7 @@ spec:
       hostNetwork: true
       containers:
         - name: l8proxy
-          image: saichler/proxy:latest
+          image: registry.layer-8.dev:44443/library/proxy:latest
           imagePullPolicy: Always
           env:
             - name: NODE_IP

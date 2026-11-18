@@ -14,5 +14,5 @@
 # limitations under the License.
 #
 set -e
-docker build --no-cache --platform=linux/amd64 -t saichler/proxy:latest .
-docker push saichler/proxy:latest
+docker build --no-cache --platform=linux/amd64 -t registry.layer-8.dev:44443/library/proxy:latest .
+docker push registry.layer-8.dev:44443/library/proxy:latest

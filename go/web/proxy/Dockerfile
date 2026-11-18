@@ -1,4 +1,4 @@
-FROM saichler/builder:latest AS build
+FROM builder:latest AS build
 
 COPY main /home/src/github.com/saichler/build/main
 COPY reverse_proxy.go /home/src/github.com/saichler/build/reverse_proxy.go
