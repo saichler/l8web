@@ -167,8 +167,19 @@ func (this *WebSocketManager) unregisterAll(aaaId string) {
 	}
 }
 
-// OnNotification serializes a notification and sends to subscribed clients.
+// OnNotification serializes a notification and sends it to the clients it
+// targets (AaaIds). A notification with no AaaIds is dropped, never broadcast:
+// client notifications are built by the cache only for the subscribers whose
+// displayed page a write belongs to, so an untargeted one is a sender bug --
+// broadcasting it made every browser re-fetch its page on every write
+// (probler/plans/websocket-page-scoped-notifications.md Phase 4).
 func (this *WebSocketManager) OnNotification(notification *l8notify.L8NotificationSet) {
+	if len(notification.AaaIds) == 0 {
+		this.vnic.Resources().Logger().Debug("WebSocketManager: dropping untargeted notification for ",
+			notification.ModelType, " key ", notification.ModelKey, " from ", notification.ServiceName)
+		return
+	}
+
 	action := ""
 	switch notification.Type {
 	case l8notify.L8NotificationType_Post:
@@ -224,15 +235,6 @@ func (this *WebSocketManager) OnNotification(notification *l8notify.L8Notificati
 
 	this.mu.RLock()
 	defer this.mu.RUnlock()
-
-	if len(notification.AaaIds) == 0 {
-		for aaaId, wc := range this.connections {
-			if err := wc.writeJSON(data); err != nil {
-				go this.removeConn(aaaId, wc)
-			}
-		}
-		return
-	}
 
 	for aaaId := range notification.AaaIds {
 		wc, ok := this.connections[aaaId]
